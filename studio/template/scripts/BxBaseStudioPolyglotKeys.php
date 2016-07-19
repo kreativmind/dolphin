@@ -3,12 +3,10 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinView Dolphin Studio Representation classes
- * @ingroup     DolphinStudio
+ * @defgroup    TridentView Trident Studio Representation classes
+ * @ingroup     TridentStudio
  * @{
  */
-
-bx_import('BxDolStudioPolyglotKeys');
 
 class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
 {
@@ -30,7 +28,7 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
         $aForm = array(
             'form_attrs' => array(
                 'id' => 'adm-lang-new-key-form',
-                'action' => BX_DOL_URL_ROOT . 'grid.php?o=' . $this->_sObject . '&a=' . $sAction,
+                'action' => BX_DOL_URL_ROOT . 'grid.php?' . bx_encode_url_params($_GET, array('ids', '_r')),
                 'method' => 'post'
             ),
             'params' => array(
@@ -57,7 +55,7 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
                     'name' => 'category_id',
                     'caption' => _t('_adm_pgt_txt_nkp_module'),
                     'values' => $this->oDb->getCategories(),
-                    'value' => '1',
+                    'value' => BX_DOL_STUDIO_PK_CATEGORY_CUSTOM,
                     'db' => array (
                         'pass' => 'Int',
                     ),
@@ -108,21 +106,20 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
             )
         ));
 
-        bx_import('BxTemplStudioFormView');
         $oForm = new BxTemplStudioFormView($aForm);
         $oForm->initChecker();
 
         if($oForm->isSubmittedAndValid()) {
             $mixedResult = $this->add($oForm);
 
-            if(is_int($mixedResult))
+            if(is_numeric($mixedResult))
                 $aRes = array('grid' => $this->getCode(false), 'blink' => $mixedResult);
             else
                 $aRes = array('msg' => $mixedResult);
 
-            $this->_echoResultJson($aRes, true);
-        } else {
-            bx_import('BxTemplStudioFunctions');
+            echoJson($aRes);
+        }
+        else {
             $sContent = BxTemplStudioFunctions::getInstance()->popupBox('adm-lang-new-key-popup', _t('_adm_pgt_txt_nkp_add_popup'), $this->_oTemplate->parseHtmlByName('pgt_new_key.html', array(
                 'form_id' => $aForm['form_attrs']['id'],
                 'form' => $oForm->getCode(true),
@@ -130,7 +127,7 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
                 'action' => $sAction
             )));
 
-            $this->_echoResultJson(array('popup' => array('html' => $sContent, 'options' => array('closeOnOuterClick' => false))), true);
+            echoJson(array('popup' => array('html' => $sContent, 'options' => array('closeOnOuterClick' => false))));
         }
     }
 
@@ -142,7 +139,7 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
         if(!$aIds || !is_array($aIds)) {
             $iId = (int)bx_get('id');
             if(!$iId) {
-                $this->_echoResultJson(array());
+                echoJson(array());
                 exit;
             }
 
@@ -159,7 +156,7 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
         $aForm = array(
             'form_attrs' => array(
                 'id' => 'adm-lang-edit-key-form',
-                'action' => BX_DOL_URL_ROOT . 'grid.php?o=' . $this->_sObject . '&a=' . $sAction,
+                'action' => BX_DOL_URL_ROOT . 'grid.php?' . bx_encode_url_params($_GET, array('ids', '_r')),
                 'method' => 'post'
             ),
             'params' => array(
@@ -190,6 +187,7 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
                 'name' => $sName,
                 'caption' => $aLanguage['title'],
                 'value' => isset($aKey['strings'][$aLanguage['name']]) ? $aKey['strings'][$aLanguage['name']]['string'] : '',
+            	'code' => 1,
                 'db' => array (
                     'pass' => 'XssHtml',
                 ),
@@ -225,7 +223,6 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
             )
         ));
 
-        bx_import('BxTemplStudioFormView');
         $oForm = new BxTemplStudioFormView($aForm);
         $oForm->initChecker();
 
@@ -237,9 +234,9 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
             else
                 $aRes = array('msg' => $mixedResult);
 
-            $this->_echoResultJson($aRes, true);
-        } else {
-            bx_import('BxTemplStudioFunctions');
+            echoJson($aRes);
+        }
+        else {
             $sContent = BxTemplStudioFunctions::getInstance()->popupBox('adm-lang-edit-key-popup', _t('_adm_pgt_txt_nkp_edit_popup', $aKey['key']), $this->_oTemplate->parseHtmlByName('pgt_new_key.html', array(
                 'form_id' => $aForm['form_attrs']['id'],
                 'form' => $oForm->getCode(true),
@@ -247,7 +244,7 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
                 'action' => $sAction
             )));
 
-            $this->_echoResultJson(array('popup' => array('html' => $sContent, 'options' => array('closeOnOuterClick' => false))), true);
+            echoJson(array('popup' => array('html' => $sContent, 'options' => array('closeOnOuterClick' => false))));
         }
     }
 
@@ -256,11 +253,9 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
         $iAffected = 0;
         $aIds = bx_get('ids');
         if(!$aIds || !is_array($aIds)) {
-            $this->_echoResultJson(array());
+            echoJson(array());
             exit;
         }
-
-        bx_import('BxDolStudioLanguagesUtils');
 
         $aIdsAffected = array ();
         foreach($aIds as $iId) {
@@ -271,7 +266,7 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
             $iAffected++;
         }
 
-        $this->_echoResultJson($iAffected ? array('grid' => $this->getCode(false), 'blink' => $aIdsAffected) : array('msg' => _t('_adm_pgt_err_save')));
+        echoJson($iAffected ? array('grid' => $this->getCode(false), 'blink' => $aIdsAffected) : array('msg' => _t('_adm_pgt_err_save')));
     }
 
     function getJsObject()
@@ -293,7 +288,6 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
         parent::_addJsCss();
         $this->_oTemplate->addJs(array('jquery.form.min.js', 'polyglot_keys.js'));
 
-        bx_import('BxTemplStudioFormView');
         $oForm = new BxTemplStudioFormView(array());
         $oForm->addCssJs();
     }
@@ -304,7 +298,6 @@ class BxBaseStudioPolyglotKeys extends BxDolStudioPolyglotKeys
 
         $sContent = "";
 
-        bx_import('BxTemplStudioFormView');
         $oForm = new BxTemplStudioFormView(array());
 
         $aInputModules = array(

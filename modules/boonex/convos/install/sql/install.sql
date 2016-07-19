@@ -110,11 +110,11 @@ INSERT INTO `sys_objects_storage` (`object`, `engine`, `params`, `token_life`, `
 ('bx_convos_files', 'Local', '', 360, 2592000, 3, 'bx_convos_files', 'deny-allow', '', 'action,apk,app,bat,bin,cmd,com,command,cpl,csh,exe,gadget,inf,ins,inx,ipa,isu,job,jse,ksh,lnk,msc,msi,msp,mst,osx,out,paf,pif,prg,ps1,reg,rgs,run,sct,shb,shs,u3p,vb,vbe,vbs,vbscript,workflow,ws,wsf', 0, 0, 0, 0, 0, 0),
 ('bx_convos_photos_resized', 'Local', '', 360, 2592000, 3, 'bx_convos_photos_resized', 'allow-deny', 'jpg,jpeg,jpe,gif,png', '', 0, 0, 0, 0, 0, 0);
 
-INSERT INTO `sys_objects_transcoder_images` (`object`, `storage_object`, `source_type`, `source_params`, `private`, `atime_tracking`, `atime_pruning`, `ts`) VALUES 
+INSERT INTO `sys_objects_transcoder` (`object`, `storage_object`, `source_type`, `source_params`, `private`, `atime_tracking`, `atime_pruning`, `ts`) VALUES 
 ('bx_convos_preview', 'bx_convos_photos_resized', 'Storage', 'a:1:{s:6:"object";s:15:"bx_convos_files";}', 'no', '1', '2592000', '0');
 
-INSERT INTO `sys_transcoder_images_filters` (`transcoder_object`, `filter`, `filter_params`, `order`) VALUES 
-('bx_convos_preview', 'Resize', 'a:4:{s:1:"w";s:3:"300";s:1:"h";s:3:"200";s:11:"crop_resize";s:1:"1";s:10:"force_type";s:3:"jpg";}', '0');
+INSERT INTO `sys_transcoder_filters` (`transcoder_object`, `filter`, `filter_params`, `order`) VALUES 
+('bx_convos_preview', 'Resize', 'a:3:{s:1:"w";s:3:"300";s:1:"h";s:3:"200";s:11:"crop_resize";s:1:"1";}', '0');
 
 -- FORMS
 
@@ -134,7 +134,7 @@ INSERT INTO `sys_form_inputs`(`object`, `module`, `name`, `value`, `values`, `ch
 ('bx_convos', 'bx_convos', 'draft_id', '0', '', 0, 'hidden', '_bx_cnv_form_entry_input_sys_draft_id', '', '', 0, 0, 0, '', '', '', '', '', '', '', '', 0, 0),
 ('bx_convos', 'bx_convos', 'text', '', '', 0, 'textarea', '_bx_cnv_form_entry_input_sys_text', '_bx_cnv_form_entry_input_text', '', 1, 0, 2, '', '', '', 'Avail', '', '_bx_cnv_form_entry_input_text_err', 'XssHtml', '', 1, 0),
 ('bx_convos', 'bx_convos', 'recipients', '', '', 0, 'custom', '_bx_cnv_form_entry_input_sys_recipients', '_bx_cnv_form_entry_input_recipients', '', 1, 0, 0, '', '', '', 'Avail', '', '_bx_cnv_form_entry_input_recipients_err', '', '', 1, 0),
-('bx_convos', 'bx_convos', 'attachments', '', '', 0, 'files', '_bx_cnv_form_entry_input_sys_attachments', '_bx_cnv_form_entry_input_attachments', '', 0, 0, 0, '', '', '', '', '', '', '', '', 1, 0);
+('bx_convos', 'bx_convos', 'attachments', 'a:1:{i:0;s:9:"sys_html5";}', 'a:2:{s:10:"sys_simple";s:26:"_sys_uploader_simple_title";s:9:"sys_html5";s:25:"_sys_uploader_html5_title";}', 0, 'files', '_bx_cnv_form_entry_input_sys_attachments', '_bx_cnv_form_entry_input_attachments', '', 0, 0, 0, '', '', '', '', '', '', '', '', 1, 0);
 
 INSERT INTO `sys_form_display_inputs` (`display_name`, `input_name`, `visible_for_levels`, `active`, `order`) VALUES
 ('bx_convos_entry_add', 'delete_confirm', 2147483647, 0, 0),

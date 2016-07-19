@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Samples
+ * @defgroup    TridentCore Samples
  * @{
  */
 
@@ -75,14 +75,12 @@ INSERT INTO `sample_grid_data` VALUES
 (35, 'MrTwister', 'mr@twister.com', 'Active', 1, '', '', '', '', 'Mumbai', '0000-00-00', '', 6),
 (42, 'kokoko', 'okokok@ok.com', 'Unconfirmed', 1, '', '', '', '', 'Ok', '0000-00-00', '', 10),
 (34, 'uno', 'uno@boonex.com', 'Active', 1, '', '', '', '', 'Sydney', '0000-00-00', '', 9),
-(41, 'Dolphin User', 'user@dolphin.co', 'Active', 1, '', '', '', '', 'Seashore', '0000-00-00', '', 2),
-(10, 'Andrew5', 'uno5@boonex.com', 'Active', 1, 'male', 'Unite People!', '<p>This is a demo profile that you may find on <a href="http://www.boonex.com/dolphin">BoonEx Dolphin</a> demo sites or some default Dolphin installations. This and other demo profiles are used to post sample media content, messages and friend requests.</p>\r\n<p> </p>\r\n<p>Dolphin is a free, open-source social networking and online dating platform by <a href="http://www.boonex.com">BoonEx Community Software Experts</a>.</p>\r\n<p> </p>\r\n<p>BoonEx mission is to Unite People and thus make the world a better place.</p>', 'AU', 'Castle Hill', '1981-03-31', 'boonex, dolphin, community, unite, people', 10),
+(41, 'Super User', 'user@super.co', 'Active', 1, '', '', '', '', 'Seashore', '0000-00-00', '', 2),
+(10, 'Andrew5', 'uno5@boonex.com', 'Active', 1, 'male', 'Unite People!', '<p>This is a demo profile that you may find on <a href="http://www.boonex.com/">BoonEx</a>.<p>BoonEx mission is to Unite People and thus make the world a better place.</p>', 'AU', 'Castle Hill', '1981-03-31', 'boonex, community, unite, people', 10),
 (47, 'Bimbo', 'bambi@bumba.com', 'Unconfirmed', 1, '', '', '', '', 'Bomba', '0000-00-00', '', 3),
 (50, 'X-Man', 'x@man.me', 'Unconfirmed', 1, '', '', '', '', 'Movie City', '0000-00-00', '', 10);
 
 */
-
-bx_import('BxTemplGrid');
 
 class BxGridMy extends BxTemplGrid
 {
@@ -99,7 +97,6 @@ class BxGridMy extends BxTemplGrid
         parent::_addJsCss();
         $this->_oTemplate->addJs('jquery.form.min.js');
 
-        bx_import('BxTemplFormView');
         $oForm = new BxTemplFormView(array());
         $oForm->addCssJs();
     }
@@ -114,7 +111,7 @@ class BxGridMy extends BxTemplGrid
         $aForm = array(
             'form_attrs' => array(
                 'id' => 'sample-add-form',
-                'action' => 'grid.php?o=' . $this->_sObject . '&a=' . $sAction, // grid.php is usiversal actions handler file, we need to pass object and action names to it at least
+                'action' => 'grid.php?' . bx_encode_url_params($_GET, array('ids', '_r')), // grid.php is usiversal actions handler file, we need to pass object and action names to it at least, or just all the params to preserve such states like filter and paginate
                 'method' => 'post',
             ),
             'params' => array (
@@ -179,7 +176,7 @@ class BxGridMy extends BxTemplGrid
                         'name' => 'close',
                         'value' => _t('Close'),
                         'attrs' => array(
-                            'onclick' => "$('.dolPopup:visible').dolPopupHide()",
+                            'onclick' => "$('.bx-popup-active').dolPopupHide()",
                             'class' => 'bx-def-margin-sec-left',
                         ),
                     ),
@@ -188,7 +185,6 @@ class BxGridMy extends BxTemplGrid
             ),
         );
 
-        bx_import('BxTemplFormView');
         $oForm = new BxTemplFormView($aForm);
         $oForm->initChecker();
 
@@ -196,18 +192,17 @@ class BxGridMy extends BxTemplGrid
 
             $iNewId = $oForm->insert (array(), true); // insert record to database
             if ($iNewId)
-                $aRes = array('grid' => $this->getCode(true), 'blink' => $iNewId); // if record is successfully added, reload grid and highlight added row
+                $aRes = array('grid' => $this->getCode(false), 'blink' => $iNewId); // if record is successfully added, reload grid and highlight added row
             else
                 $aRes = array('msg' => "Error occured"); // if record adding failed, display error message
 
-            $this->_echoResultJson($aRes, true);
+            echoJson($aRes);
 
         } else { // if form is not submitted or some fields are invalid, display popup with form
 
-            bx_import('BxTemplFunctions');
             // we need to use 'transBox' function to properly display 'popup'
             $s = BxTemplFunctions::getInstance()->transBox('', '
-                <div class="bx-def-padding-top bx-def-padding-left bx-def-padding-right bx-def-color-bg-block" style="width:300px;">' . $oForm->getCode() . '</div>
+                <div class="bx-def-padding bx-def-color-bg-block" style="width:300px;">' . $oForm->getCode() . '</div>
                 <script>
                     $(document).ready(function () {
                         $("#sample-add-form").ajaxForm({
@@ -216,14 +211,14 @@ class BxGridMy extends BxTemplGrid
                                 bx_loading($("#' . $aForm['form_attrs']['id'] . '"), true);
                             },
                             success: function (data) {
-                                $(".dolPopup:visible").dolPopupHide();
+                                $(".bx-popup-active").dolPopupHide();
                                 glGrids.' . $this->_sObject . '.processJson(data, "' . $sAction . '");
                             }
                         });
                     });
                 </script>');
 
-            $this->_echoResultJson(array('popup' => array('html' => $s, 'options' => array('closeOnOuterClick' => false))), true);
+            echoJson(array('popup' => array('html' => $s, 'options' => array('closeOnOuterClick' => false))));
 
         }
     }
@@ -236,7 +231,7 @@ class BxGridMy extends BxTemplGrid
         $iAffected = 0;
         $aIds = bx_get('ids');
         if (!$aIds || !is_array($aIds)) {
-            $this->_echoResultJson(array());
+            echoJson(array());
             exit;
         }
 
@@ -248,7 +243,7 @@ class BxGridMy extends BxTemplGrid
             $iAffected++;
         }
 
-        $this->_echoResultJson(array_merge(
+        echoJson(array_merge(
                 array(
                     'grid' => $this->getCode(false),
                     'blink' => $aIdsAffected,
@@ -290,7 +285,7 @@ class BxGridMy extends BxTemplGrid
     protected function _getCellHeaderStatus ($sKey, $aField)
     {
         $s = parent::_getCellHeaderDefault($sKey, $aField);
-        return preg_replace ('/<th(.*?)>(.*?)<\/th>/', '<th$1><img src="' . BxDolTemplate::getInstance()->getIconUrl('sys_fl_kg.gif') . '"></th>', $s);
+        return preg_replace ('/<th(.*?)>(.*?)<\/th>/', '<th$1><img src="' . BxDolTemplate::getInstance()->getImageUrl('acl-standard.png') . '"></th>', $s);
     }
 
     /**

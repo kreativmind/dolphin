@@ -4,7 +4,7 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Persons Persons
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
@@ -18,12 +18,12 @@ $aConfig = array(
     'name' => 'bx_persons',
     'title' => 'Persons',
     'note' => 'Basic person profiles functionality.',
-    'version' => '8.0.1.DEV',
+    'version' => '9.0.1.DEV',
     'vendor' => 'BoonEx',
 	'help_url' => 'http://feed.boonex.com/?section={module_name}',
 
     'compatible_with' => array(
-        '8.0.x'
+        '9.0.x'
     ),
 
     /**
@@ -41,6 +41,48 @@ $aConfig = array(
     'language_category' => 'Persons',
 
     /**
+     * Connections.
+     */
+    'connections' => array(
+		'sys_profiles_friends' => array ('type' => 'profiles'),
+		'sys_profiles_subscriptions' => array ('type' => 'profiles'),
+    ),
+
+    /**
+     * Menu triggers.
+     */
+    'menu_triggers' => array(
+    	'trigger_profile_view_submenu', 
+    	'trigger_profile_view_actions',
+    ),
+
+	/**
+     * Page triggers.
+     */
+    'page_triggers' => array (
+    	'trigger_page_profile_view_entry', 
+    ),
+
+    /**
+     * Storages.
+     */
+    'storages' => array(
+    	'bx_persons_pictures'
+    ),
+
+	/**
+     * Transcoders.
+     */
+    'transcoders' => array(
+    	'bx_persons_icon',
+    	'bx_persons_thumb',
+    	'bx_persons_avatar',
+    	'bx_persons_picture',
+    	'bx_persons_cover',
+    	'bx_persons_cover_thumb'
+    ),
+
+    /**
      * Installation/Uninstallation Section.
      */
     'install' => array(
@@ -49,30 +91,47 @@ $aConfig = array(
         'clear_db_cache' => 1,
     ),
     'uninstall' => array (
+    	'process_storages' => 1,
         'execute_sql' => 1,
         'update_languages' => 1,
+    	'process_connections' => 1,
+    	'process_deleted_profiles' => 1,
+    	'update_relations' => 1,
         'clear_db_cache' => 1,
-        'process_deleted_profiles' => 1,
     ),
     'enable' => array(
         'execute_sql' => 1,
-        'recompile_menus' => 1,
-        'recompile_permalinks' => 1,
-        'recompile_alerts' => 1,
+    	'update_relations' => 1,
+        'clear_db_cache' => 1,
+    ),
+	'enable_success' => array(
+    	'process_menu_triggers' => 1,
+    	'process_page_triggers' => 1,
+    	'register_transcoders' => 1,
         'clear_db_cache' => 1,
     ),
     'disable' => array (
         'execute_sql' => 1,
-        'recompile_menus' => 1,
-        'recompile_permalinks' => 1,
-        'recompile_alerts' => 1,
+    	'unregister_transcoders' => 1,
+    	'update_relations' => 1,
         'clear_db_cache' => 1,
+    ),
+    'disable_failed' => array (
+    	'register_transcoders' => 1,
+    	'clear_db_cache' => 1,
     ),
 
     /**
      * Dependencies Section
      */
     'dependencies' => array(),
+
+    /**
+     * Connections Section
+     */
+    'relations' => array(
+        'bx_notifications',
+    ),
 );
 
 /** @} */

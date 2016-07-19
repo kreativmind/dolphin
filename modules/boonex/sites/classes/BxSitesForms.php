@@ -4,14 +4,10 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Sites Sites
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
-
-bx_import('BxDolProfileForms');
-bx_import('BxDolProfile');
-bx_import('BxDolForm');
 
 /**
  * Note forms functions
@@ -35,7 +31,6 @@ class BxSitesForms extends BxDolProfileForms
         if($sMsg !== CHECK_ACTION_RESULT_ALLOWED)
             return MsgBox($sMsg);
 
-        bx_import('BxDolForm');
         $oForm = BxDolForm::getObjectInstance('bx_sites', 'bx_sites_site_add');
         if(!$oForm)
             return MsgBox(_t('_sys_txt_error_occured'));

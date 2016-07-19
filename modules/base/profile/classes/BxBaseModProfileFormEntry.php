@@ -4,12 +4,10 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    BaseProfile Base classes for profile modules
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
-
-bx_import('BxBaseModGeneralFormEntry');
 
 /**
  * Create/edit profile form.
@@ -25,27 +23,44 @@ class BxBaseModProfileFormEntry extends BxBaseModGeneralFormEntry
 
         $CNF = &$this->_oModule->_oConfig->CNF;
 
-        if (!empty($CNF['FIELD_PICTURE'])) {
+        if (isset($this->aInputs[$CNF['FIELD_ALLOW_VIEW_TO']]) && $oPrivacy = BxDolPrivacy::getObjectInstance($CNF['OBJECT_PRIVACY_VIEW'])) {
+
+            $aSave = array('db' => array('pass' => 'Xss'));
+            array_walk($this->aInputs[$CNF['FIELD_ALLOW_VIEW_TO']], function ($a, $k, $aSave) {
+                if (in_array($k, array('info', 'caption', 'value')))
+                    $aSave[0][$k] = $a;
+            }, array(&$aSave));
+            
+            $aGroupChooser = $oPrivacy->getGroupChooser($CNF['OBJECT_PRIVACY_VIEW']);
+            
+            $this->aInputs[$CNF['FIELD_ALLOW_VIEW_TO']] = array_merge($this->aInputs[$CNF['FIELD_ALLOW_VIEW_TO']], $aGroupChooser, $aSave);
+		}
+
+        if (!empty($CNF['FIELD_PICTURE']) && isset($this->aInputs[$CNF['FIELD_PICTURE']])) {
             $this->_aImageFields[$CNF['FIELD_PICTURE']] = array (
                 'storage_object' => $CNF['OBJECT_STORAGE'],
                 'images_transcoder' => $CNF['OBJECT_IMAGES_TRANSCODER_THUMB'],
-                'field_preview' => $CNF['FIELD_PICTURE_PREVIEW'],
+                'uploaders' => $CNF['OBJECT_UPLOADERS_PICTURE'],
             );
         }
 
-        if (!empty($CNF['FIELD_COVER'])) {
+        if (!empty($CNF['FIELD_COVER']) && isset($this->aInputs[$CNF['FIELD_COVER']])) {
             $this->_aImageFields[$CNF['FIELD_COVER']] = array (
                 'storage_object' => $CNF['OBJECT_STORAGE_COVER'],
                 'images_transcoder' => $CNF['OBJECT_IMAGES_TRANSCODER_COVER_THUMB'],
-                'field_preview' => $CNF['FIELD_COVER_PREVIEW'],
+                'uploaders' => $CNF['OBJECT_UPLOADERS_COVER'],
             );
         }
 
-        if (!empty($CNF['FIELD_PICTURE_PREVIEW']))
-            $this->_aImageFields[$CNF['FIELD_PICTURE_PREVIEW']] = $this->_aImageFields[$CNF['FIELD_PICTURE']];
-
-        if (!empty($CNF['FIELD_COVER_PREVIEW']))
-            $this->_aImageFields[$CNF['FIELD_COVER_PREVIEW']] = $this->_aImageFields[$CNF['FIELD_COVER']];
+        foreach ($this->_aImageFields as $sField => $aParams) {
+            $this->aInputs[$sField]['storage_object'] = $aParams['storage_object'];
+            $this->aInputs[$sField]['uploaders'] = !empty($this->aInputs[$sField]['value']) ? unserialize($this->aInputs[$sField]['value']) : $aParams['uploaders'];
+            $this->aInputs[$sField]['images_transcoder'] = $aParams['images_transcoder'];
+            $this->aInputs[$sField]['storage_private'] = 0;
+            $this->aInputs[$sField]['multiple'] = false;
+            $this->aInputs[$sField]['content_id'] = 0;
+            $this->aInputs[$sField]['ghost_template'] = '';
+        }
 
         $oAccountProfile = BxDolProfile::getInstanceAccountProfile();
         if ($oAccountProfile)
@@ -54,60 +69,24 @@ class BxBaseModProfileFormEntry extends BxBaseModGeneralFormEntry
 
     function initChecker ($aValues = array (), $aSpecificValues = array())
     {
-        parent::initChecker($aValues, $aSpecificValues);
-
         $CNF = &$this->_oModule->_oConfig->CNF;
 
-        foreach ($this->_aImageFields as $sField => $aVals) {
-            if (!isset($this->aInputs[$sField]))
-                continue;
+        $aContentInfo = isset($CNF['FIELD_ID']) && isset($aValues[$CNF['FIELD_ID']]) ? $this->_oModule->_oDb->getContentInfoById ($aValues[$CNF['FIELD_ID']]) : array();
+        
+        foreach ($this->_aImageFields as $sField => $aParams) {
 
             if ($aValues && !empty($aValues[$CNF['FIELD_ID']]))
                 $this->aInputs[$sField]['content_id'] = $aValues[$CNF['FIELD_ID']];
 
-            $sErrorString = '';
-            $this->aInputs[$sField]['file_id'] = $this->_processFile ($sField, isset($aValues[$sField]) ? $aValues[$sField] : 0, $sErrorString);
-            if ($sErrorString) {
-                $this->aInputs[$sField]['error'] = $sErrorString;
-                $this->setValid(false);
-            }
-
-            if (!isset($this->aInputs[$aVals['field_preview']]) || !empty($this->aInputs[$aVals['field_preview']]['content']))
-                continue;
-
-            $oTranscoder = BxDolImageTranscoder::getObjectInstance($aVals['images_transcoder']);
-
-            $aVars = array (
-                'bx_if:picture' => array (
-                    'condition' => $oTranscoder && isset($aValues[$sField]) && $aValues[$sField] ? true : false,
-                    'content' => array (
-                        'picture_url' => $oTranscoder && isset($aValues[$sField]) && $aValues[$sField] ? $oTranscoder->getImageUrl($aValues[$sField]) : '',
-                    ),
-                ),
-                'bx_if:no_picture' => array (
-                    'condition' => !$oTranscoder || !isset($aValues[$sField]) || !$aValues[$sField] ? true : false,
-                    'content' => array (),
-                ),
-            );
-            $this->aInputs[$aVals['field_preview']]['content'] = $this->_oModule->_oTemplate->parseHtmlByName('picture_preview.html', $aVars);
+            $this->aInputs[$sField]['ghost_template'] = $this->_oModule->_oTemplate->parseHtmlByName('form_ghost_template.html', $this->_getPhotoGhostTmplVars($sField, $aContentInfo));
         }
+
+        parent::initChecker($aValues, $aSpecificValues);
     }
 
     public function insert ($aValsToAdd = array(), $isIgnore = false)
     {
         $CNF = &$this->_oModule->_oConfig->CNF;
-
-        if (!empty($this->aInputs[$CNF['FIELD_PICTURE']])) {
-            $aValsToAdd = array_merge($aValsToAdd, array (
-                $CNF['FIELD_PICTURE'] => $this->aInputs[$CNF['FIELD_PICTURE']]['file_id'],
-            ));
-        }
-
-        if (!empty($this->aInputs[$CNF['FIELD_COVER']])) {
-            $aValsToAdd = array_merge($aValsToAdd, array (
-                $CNF['FIELD_COVER'] => $this->aInputs[$CNF['FIELD_COVER']]['file_id'],
-            ));
-        }
 
         return parent::insert ($aValsToAdd, $isIgnore);
     }
@@ -116,12 +95,6 @@ class BxBaseModProfileFormEntry extends BxBaseModGeneralFormEntry
     {
         $CNF = &$this->_oModule->_oConfig->CNF;
 
-        if (!empty($this->aInputs[$CNF['FIELD_COVER']]))
-            $aValsToAdd[$CNF['FIELD_COVER']] = $this->aInputs[$CNF['FIELD_COVER']]['file_id'];
-
-        if (!empty($this->aInputs[$CNF['FIELD_PICTURE']]))
-            $aValsToAdd[$CNF['FIELD_PICTURE']] = $this->aInputs[$CNF['FIELD_PICTURE']]['file_id'];
-
         return parent::update ($iContentId, $aValsToAdd, $aTrackTextFieldsChanges);
     }
 
@@ -129,52 +102,41 @@ class BxBaseModProfileFormEntry extends BxBaseModGeneralFormEntry
     {
         $CNF = &$this->_oModule->_oConfig->CNF;
 
-        foreach ($this->_aImageFields as $sField => $aVals) {
-            if (isset($aContentInfo[$sField]) && $aContentInfo[$sField])
-                $this->_deleteFile ($aContentInfo[$sField], $aVals['storage_object']);
+        $iProfileId = $this->getContentOwnerProfileId($iContentId);        
+
+        foreach ($this->_aImageFields as $sField => $aParams) {
+            $oStorage = BxDolStorage::getObjectInstance($aParams['storage_object']);
+            $aFiles = $oStorage->getGhosts($iProfileId, $iContentId);
+
+            foreach ($aFiles as $aFile) {
+                if (!$oStorage->getFile($aFile['id']))
+                    continue;
+                $bRet = $oStorage->deleteFile($aFile['id'], $this->_iAccountProfileId);
+            }
         }
 
-        bx_import('BxDolView');
-        BxDolView::getObjectInstance($CNF['OBJECT_VIEWS'], $iContentId)->onObjectDelete();
-
-        return parent::delete($iContentId);
+        return parent::delete($iContentId, $aContentInfo);
     }
 
-    function _processFile ($sField, $iFileIdOld, &$sErrorString)
+    protected function _associalFileWithContent($oStorage, $iFileId, $iProfileId, $iContentId, $sPictureField = '')
     {
-        if (empty($_FILES[$sField]['tmp_name']))
-            return $iFileIdOld;
-
-        $oStorage = BxDolStorage::getObjectInstance($this->_aImageFields[$sField]['storage_object']);
-        if (!$oStorage)
-            return $iFileIdOld;
-
-        // delete previous file
-        $this->_deleteFile($iFileIdOld, $this->_aImageFields[$sField]['storage_object']);
-
-        // process new file and return new file id
-        if (!($iFileId = $oStorage->storeFileFromForm($_FILES[$sField], false, $this->_iAccountProfileId))) {
-            $sErrorString = $oStorage->getErrorString();
-            return 0;
-        }
-
-        return $iFileId;
+        $oStorage->updateGhostsContentId ($iFileId, $iProfileId, $iContentId);
+        $this->_oModule->_oDb->updateContentPictureById($iContentId, 0/*$iProfileId*/, $iFileId, $sPictureField);
     }
 
-    function _deleteFile ($iFileId, $sStorageObject)
+    protected function _getPhotoGhostTmplVars($sField, $aContentInfo = array())
     {
-        if (!$iFileId)
-            return true;
+    	$CNF = &$this->_oModule->_oConfig->CNF;
 
-        if (!($oStorage = BxDolStorage::getObjectInstance($sStorageObject)))
-            return false;
-
-        if (!$oStorage->getFile($iFileId))
-            return true;
-
-        return $oStorage->deleteFile($iFileId, $this->_iAccountProfileId);
+    	return array (
+			'name' => $this->aInputs[$sField]['name'],
+            'content_id' => $this->aInputs[$sField]['content_id'],
+			'bx_if:set_thumb' => array (
+				'condition' => false,
+				'content' => array (),
+			),
+		);
     }
-
 }
 
 /** @} */

@@ -1,15 +1,14 @@
 <?php
 /**
- * @package     Dolphin Core
- * @copyright   Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
- * @license     CC-BY - http://creativecommons.org/licenses/by/3.0/
+ * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
+ * CC-BY License - http://creativecommons.org/licenses/by/3.0/
+ *
+ * @defgroup    TridentCore Trident Core
+ * @{
  */
 
 require_once('./../inc/header.inc.php');
 require_once(BX_DIRECTORY_PATH_INC . "design.inc.php");
-
-bx_import('BxDolLanguages');
-bx_import('BxDolTemplate');
 
 $oTemplate = BxDolTemplate::getInstance();
 $oTemplate->setPageNameIndex (BX_PAGE_DEFAULT);
@@ -197,7 +196,6 @@ function PageCompMainCode()
         ),
     );
 
-    bx_import('BxTemplFormView');
     $oForm = new BxTemplFormView($aForm);
     $oForm->initChecker();
     if ( $oForm->isSubmittedAndValid() ) {
@@ -210,3 +208,5 @@ function PageCompMainCode()
     return DesignBoxContent("Sample form", $s, BX_DB_PADDING_DEF);
 
 }
+
+/** @} */

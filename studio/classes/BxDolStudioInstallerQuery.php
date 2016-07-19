@@ -3,11 +3,9 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinStudio Dolphin Studio
+ * @defgroup    TridentStudio Trident Studio
  * @{
  */
-
-bx_import('BxDolModuleQuery');
 
 class BxDolStudioInstallerQuery extends BxDolModuleQuery
 {
@@ -16,19 +14,35 @@ class BxDolStudioInstallerQuery extends BxDolModuleQuery
         parent::__construct();
     }
 
+    function insertRelation($sModule, $aRelation)
+    {
+    	$aRelation['module'] = $sModule;
+        return (int)$this->query("INSERT INTO `sys_modules_relations` SET `module`=:module, `on_install`=:on_install, `on_uninstall`=:on_uninstall, `on_enable`=:on_enable, `on_disable`=:on_disable", $aRelation) > 0;
+    }
+
+	function deleteRelation($sModule)
+    {
+    	$sQuery = $this->prepare("DELETE FROM `sys_modules_relations` WHERE `module`=? LIMIT 1", $sModule);
+        return (int)$this->query($sQuery) > 0;
+    }
+
     function getRelationsBy($aParams = array())
     {
-    	$sMethod = 'getAll';
+    	$aMethod = array('name' => 'getAll', 'params' => array(0 => 'query'));
     	$sWhereClause = "";
 
         switch($aParams['type']) {
             case 'module':
-            	$sMethod = 'getRow';
-                $sWhereClause .= $this->prepare(" AND `module`=?", $aParams['value']);
+            	$aMethod['name'] = 'getRow';
+            	$aMethod['params'][1] = array(
+                	'module' => $aParams['value']
+                );
+
+                $sWhereClause .= " AND `module`=:module";
                 break;
         }
 
-        $sSql = "SELECT
+        $aMethod['params'][0] = "SELECT
                 `id`,
                 `module`,
                 `on_install`,
@@ -38,7 +52,7 @@ class BxDolStudioInstallerQuery extends BxDolModuleQuery
             FROM `sys_modules_relations`
             WHERE 1" . $sWhereClause;
 
-        return $this->$sMethod($sSql);
+        return call_user_func_array(array($this, $aMethod['name']), $aMethod['params']);
     }
 
     function insertModule(&$aConfig)

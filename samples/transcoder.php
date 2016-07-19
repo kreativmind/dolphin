@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Samples
+ * @defgroup    TridentCore Samples
  * @{
  */
 
@@ -34,10 +34,10 @@
  * INSERT INTO `sys_objects_storage` (`object`, `engine`, `params`, `token_life`, `cache_control`, `levels`, `table_files`, `ext_mode`, `ext_allow`, `ext_deny`, `quota_size`, `current_size`, `quota_number`, `current_number`, `max_file_size`, `ts`) VALUES
  * ('resizer', 'Local', '', 360, 84000, 0, 'bx_resizer_files', 'deny-allow', '', 'exe,com,bat,pif,scr', 1000000000, 0, 100, 0, 300000000, 0);
  *
- * INSERT INTO `sys_objects_transcoder_images` (`object`, `storage_object`, `source_type`, `source_params`, `private`, `atime_tracking`, `atime_pruning`, `ts`) VALUES
+ * INSERT INTO `sys_objects_transcoder` (`object`, `storage_object`, `source_type`, `source_params`, `private`, `atime_tracking`, `atime_pruning`, `ts`) VALUES
  * ('sample', 'resizer', 'Folder', 'a:1:{s:4:"path";s:12:"samples/img/";}', 'no', 0, 0, 0);
  *
- * INSERT INTO `sys_transcoder_images_filters` (`transcoder_object`, `filter`, `filter_params`, `order`) VALUES
+ * INSERT INTO `sys_transcoder_filters` (`transcoder_object`, `filter`, `filter_params`, `order`) VALUES
  * ('sample', 'Resize', 'a:3:{s:1:"w";i:100;s:1:"h";i:100;s:13:"square_resize";i:0;}', 1),
  * ('sample', 'Grayscale', '', 2);
  *
@@ -47,9 +47,6 @@
 
 require_once('./../inc/header.inc.php');
 require_once(BX_DIRECTORY_PATH_INC . "design.inc.php");
-
-bx_import('BxDolLanguages');
-bx_import('BxDolTemplate');
 
 $oTemplate = BxDolTemplate::getInstance();
 $oTemplate->setPageNameIndex (BX_PAGE_DEFAULT);
@@ -65,8 +62,7 @@ function PageCompMainCode()
     ob_start();
 
     $iProfileId = 123;
-    bx_import('BxDolImageTranscoder');
-    $oTranscoder = BxDolImageTranscoder::getObjectInstance('sample');
+    $oTranscoder = BxDolTranscoderImage::getObjectInstance('sample');
     if (!$oTranscoder)
         die('Transcoder object isn\'t defined');
 
@@ -97,7 +93,7 @@ $(document).ready(function () {
         while (false !== ($sFile = readdir($h))) {
             if ('.' == $sFile[0] || !is_file($sPath . $sFile))
                 continue;
-            $sUrl = $oTranscoder->getImageUrl($sFile);
+            $sUrl = $oTranscoder->getFileUrl($sFile);
             echo $sFile . ' : <img src="' . $sUrl . '" /> <br /> ' . $sUrl . ' <hr />';
         }
     }

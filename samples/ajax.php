@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Samples
+ * @defgroup    TridentCore Samples
  * @{
  */
 
@@ -16,8 +16,6 @@ $aPathInfo = pathinfo(__FILE__);
 require_once ($aPathInfo['dirname'] . '/../inc/header.inc.php');
 require_once(BX_DIRECTORY_PATH_INC . "design.inc.php");
 
-bx_import('BxDolLanguages');
-bx_import('BxTemplFunctions');
 
 if  (bx_get('ajax') || (isset( $_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')) {
     sleep(3);

@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Samples
+ * @defgroup    TridentCore Samples
  * @{
  */
 
@@ -128,8 +128,6 @@ INSERT INTO `sys_form_display_inputs` (`display_name`, `input_name`, `visible_fo
 ('sample_form_objects_edit', 'do_submit', 2147483647, 1, 1000);
 
 */
-
-bx_import('BxTemplFormView');
 
 class BxSampleForm extends BxTemplFormView
 {

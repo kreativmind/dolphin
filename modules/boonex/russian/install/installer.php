@@ -4,12 +4,10 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Russian Russian language
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
-
-bx_import('BxDolStudioInstaller');
 
 class BxRsnInstaller extends BxDolStudioInstaller
 {

@@ -35,9 +35,8 @@ INSERT INTO `sys_objects_page`(`object`, `uri`, `title_system`, `title`, `module
 
 INSERT INTO `sys_pages_blocks`(`object`, `cell_id`, `module`, `title`, `designbox_id`, `visible_for_levels`, `type`, `content`, `deletable`, `copyable`, `active`, `order`) VALUES 
 ('bx_convos_view_entry', 4, 'bx_convos', '_bx_cnv_page_block_title_entry_text', 13, 2147483647, 'service', 'a:2:{s:6:\"module\";s:9:\"bx_convos\";s:6:\"method\";s:17:\"entity_text_block\";}', 0, 0, 1, 0),
-('bx_convos_view_entry', 3, 'bx_convos', '_bx_cnv_page_block_title_entry_collaborators', 0, 2147483647, 'service', 'a:2:{s:6:\"module\";s:9:\"bx_convos\";s:6:\"method\";s:20:\"entity_collaborators\";}', 0, 0, 1, 0),
-('bx_convos_view_entry', 1, 'bx_convos', '_bx_cnv_page_block_title_entry_actions', 0, 2147483647, 'service', 'a:2:{s:6:\"module\";s:9:\"bx_convos\";s:6:\"method\";s:14:\"entity_actions\";}', 0, 0, 1, 0),
-('bx_convos_view_entry', 2, 'bx_convos', '_bx_cnv_page_block_title_entry_author', 0, 2147483647, 'service', 'a:2:{s:6:\"module\";s:9:\"bx_convos\";s:6:\"method\";s:13:\"entity_author\";}', 0, 0, 1, 0),
+('bx_convos_view_entry', 3, 'bx_convos', '_bx_cnv_page_block_title_entry_collaborators', 13, 2147483647, 'service', 'a:2:{s:6:\"module\";s:9:\"bx_convos\";s:6:\"method\";s:20:\"entity_collaborators\";}', 0, 0, 1, 0),
+('bx_convos_view_entry', 2, 'bx_convos', '_bx_cnv_page_block_title_entry_author', 13, 2147483647, 'service', 'a:2:{s:6:\"module\";s:9:\"bx_convos\";s:6:\"method\";s:13:\"entity_author\";}', 0, 0, 1, 0),
 ('bx_convos_view_entry', 4, 'bx_convos', '_bx_cnv_page_block_title_entry_attachments', 11, 2147483647, 'service', 'a:2:{s:6:\"module\";s:9:\"bx_convos\";s:6:\"method\";s:18:\"entity_attachments\";}', 0, 0, 1, 1),
 ('bx_convos_view_entry', 4, 'bx_convos', '_bx_cnv_page_block_title_entry_comments', 11, 2147483647, 'service', 'a:2:{s:6:\"module\";s:9:\"bx_convos\";s:6:\"method\";s:15:\"entity_comments\";}', 0, 0, 1, 2);
 
@@ -48,7 +47,7 @@ INSERT INTO `sys_objects_page`(`object`, `title_system`, `title`, `module`, `lay
 ('bx_convos_home', '_bx_cnv_page_title_sys_folder', '_bx_cnv_page_title_folder', 'bx_convos', 5, 2147483647, 1, 'convos-folder', 'modules/?r=convos/folder/1', '', '', '', 0, 1, 0, 'BxCnvPageBrowse', 'modules/boonex/convos/classes/BxCnvPageBrowse.php');
 
 INSERT INTO `sys_pages_blocks`(`object`, `cell_id`, `module`, `title`, `designbox_id`, `visible_for_levels`, `type`, `content`, `deletable`, `copyable`, `order`) VALUES 
-('bx_convos_home', 1, 'bx_convos', '_bx_cnv_page_block_title_folder', 0, 2147483647, 'service', 'a:2:{s:6:\"module\";s:9:\"bx_convos\";s:6:\"method\";s:4:\"home\";}', 0, 1, 0);
+('bx_convos_home', 1, 'bx_convos', '_bx_cnv_page_block_title_folder', 11, 2147483647, 'service', 'a:3:{s:6:"module";s:9:"bx_convos";s:6:"method";s:23:"conversations_in_folder";s:6:"params";a:1:{i:0;s:11:"{folder_id}";}}', 0, 1, 0);
 
 
 -- MENU: actions menu for view entry 
@@ -65,7 +64,6 @@ INSERT INTO `sys_menu_items`(`set_name`, `module`, `name`, `title_system`, `titl
 
 
 -- MENU: module sub-menu
-
 INSERT INTO `sys_objects_menu`(`object`, `title`, `set_name`, `module`, `template_id`, `deletable`, `active`, `override_class_name`, `override_class_file`) VALUES 
 ('bx_convos_submenu', '_bx_cnv_menu_title_submenu', 'bx_convos_submenu', 'bx_convos', 8, 0, 1, '', '');
 
@@ -74,27 +72,27 @@ INSERT INTO `sys_menu_sets`(`set_name`, `module`, `title`, `deletable`) VALUES
 
 INSERT INTO `sys_menu_items`(`set_name`, `module`, `name`, `title_system`, `title`, `link`, `onclick`, `target`, `icon`, `submenu_object`, `visible_for_levels`, `active`, `copyable`, `order`) VALUES 
 ('bx_convos_submenu', 'bx_convos', 'convos-folder-inbox', '_bx_cnv_menu_item_title_system_folder_inbox', '_bx_cnv_menu_item_title_folder_inbox', 'modules/?r=convos/folder/1', '', '', '', '', 2147483647, 1, 1, 1),
-('bx_convos_submenu', 'bx_convos', 'convos-folder-more', '_bx_cnv_menu_item_title_system_folder_more', '_bx_cnv_menu_item_title_folder_more', 'javascript:void(0);', 'bx_menu_popup(''bx_convos_menu_folders_more'', this);', '', '', '', 2147483647, 1, 1, 2);
+('bx_convos_submenu', 'bx_convos', 'convos-drafts', '_bx_cnv_menu_item_title_system_folder_drafts', '_bx_cnv_menu_item_title_folder_drafts', 'modules/?r=convos/folder/2', '', '', '', '', 2147483647, 1, 1, 2),
+('bx_convos_submenu', 'bx_convos', 'convos-spam', '_bx_cnv_menu_item_title_system_folder_spam', '_bx_cnv_menu_item_title_folder_spam', 'modules/?r=convos/folder/3', '', '', '', '', 2147483647, 1, 1, 3),
+('bx_convos_submenu', 'bx_convos', 'convos-trash', '_bx_cnv_menu_item_title_system_folder_trash', '_bx_cnv_menu_item_title_folder_trash', 'modules/?r=convos/folder/4', '', '', '', '', 2147483647, 1, 1, 4);
+-- ('bx_convos_submenu', 'bx_convos', 'convos-folder-more', '_bx_cnv_menu_item_title_system_folder_more', '_bx_cnv_menu_item_title_folder_more', 'javascript:void(0);', 'bx_menu_popup(''bx_convos_menu_folders_more'', this);', '', '', '', 2147483647, 1, 1, 5)
 
-
+-- TODO: Remove it completely if 'more' menu item isn't needed.
 -- MENU: more folders
+-- INSERT INTO `sys_objects_menu`(`object`, `title`, `set_name`, `module`, `template_id`, `deletable`, `active`, `override_class_name`, `override_class_file`) VALUES 
+-- ('bx_convos_menu_folders_more', '_bx_cnv_menu_title_folders_more', 'bx_convos_menu_folders_more', 'bx_convos', 4, 0, 1, '', '');
 
-INSERT INTO `sys_objects_menu`(`object`, `title`, `set_name`, `module`, `template_id`, `deletable`, `active`, `override_class_name`, `override_class_file`) VALUES 
-('bx_convos_menu_folders_more', '_bx_cnv_menu_title_folders_more', 'bx_convos_menu_folders_more', 'bx_convos', 4, 0, 1, '', '');
+-- INSERT INTO `sys_menu_sets`(`set_name`, `module`, `title`, `deletable`) VALUES 
+-- ('bx_convos_menu_folders_more', 'bx_convos', '_bx_cnv_menu_set_title_folders_more', 0);
 
-INSERT INTO `sys_menu_sets`(`set_name`, `module`, `title`, `deletable`) VALUES 
-('bx_convos_menu_folders_more', 'bx_convos', '_bx_cnv_menu_set_title_folders_more', 0);
-
-INSERT INTO `sys_menu_items`(`set_name`, `module`, `name`, `title_system`, `title`, `link`, `onclick`, `target`, `icon`, `submenu_object`, `visible_for_levels`, `active`, `copyable`, `order`) VALUES 
-('bx_convos_menu_folders_more', 'bx_convos', 'convos-drafts', '_bx_cnv_menu_item_title_system_folder_drafts', '_bx_cnv_menu_item_title_folder_drafts', 'modules/?r=convos/folder/2', '', '', '', '', 2147483647, 1, 1, 1),
-('bx_convos_menu_folders_more', 'bx_convos', 'convos-spam', '_bx_cnv_menu_item_title_system_folder_spam', '_bx_cnv_menu_item_title_folder_spam', 'modules/?r=convos/folder/3', '', '', '', '', 2147483647, 1, 1, 2),
-('bx_convos_menu_folders_more', 'bx_convos', 'convos-trash', '_bx_cnv_menu_item_title_system_folder_trash', '_bx_cnv_menu_item_title_folder_trash', 'modules/?r=convos/folder/4', '', '', '', '', 2147483647, 1, 1, 3);
+-- INSERT INTO `sys_menu_items`(`set_name`, `module`, `name`, `title_system`, `title`, `link`, `onclick`, `target`, `icon`, `submenu_object`, `visible_for_levels`, `active`, `copyable`, `order`) VALUES 
+-- ('bx_convos_menu_folders_more', 'bx_convos', 'convos-drafts', '_bx_cnv_menu_item_title_system_folder_drafts', '_bx_cnv_menu_item_title_folder_drafts', 'modules/?r=convos/folder/2', '', '', '', '', 2147483647, 1, 1, 1);
 
 
 -- MENU: notifications
-
+SET @iMIOrder = (SELECT IFNULL(MAX(`order`), 0) FROM `sys_menu_items` WHERE `set_name` = 'sys_account_notifications');
 INSERT INTO `sys_menu_items` (`set_name`, `module`, `name`, `title_system`, `title`, `link`, `onclick`, `target`, `icon`, `addon`, `submenu_object`, `visible_for_levels`, `active`, `copyable`, `order`) VALUES
-('sys_account_notifications', 'bx_convos', 'notifications-convos', '_bx_cnv_menu_item_title_system_convos', '_bx_cnv_menu_item_title_convos', 'modules/?r=convos/folder/1', '', '', 'comments col-red1', 'a:2:{s:6:"module";s:9:"bx_convos";s:6:"method";s:23:"get_unread_messages_num";}', '', 2147483646, 1, 0, 2);
+('sys_account_notifications', 'bx_convos', 'notifications-convos', '_bx_cnv_menu_item_title_system_convos', '_bx_cnv_menu_item_title_convos', 'modules/?r=convos/folder/1', '', '', 'comments col-red1', 'a:2:{s:6:"module";s:9:"bx_convos";s:6:"method";s:23:"get_unread_messages_num";}', '', 2147483646, 1, 0, @iMIOrder + 1);
 
 
 -- MENU: profile stats
@@ -105,7 +103,8 @@ INSERT INTO `sys_menu_items` (`set_name`, `module`, `name`, `title_system`, `tit
 -- MENU: add menu item to profiles modules actions menu (trigger* menu sets are processed separately upon modules enable/disable)
 
 INSERT INTO `sys_menu_items`(`set_name`, `module`, `name`, `title_system`, `title`, `link`, `onclick`, `target`, `icon`, `submenu_object`, `visible_for_levels`, `active`, `copyable`, `order`) VALUES 
-('trigger_profile_view_actions', 'bx_convos', 'convos-compose', '_bx_cnv_menu_item_title_system_message', '_bx_cnv_menu_item_title_message', 'page.php?i=start-convo&profiles={profile_id}', '', '', '', '', 2147483647, 1, 0, 0);
+('trigger_profile_view_actions', 'bx_convos', 'convos-compose', '_bx_cnv_menu_item_title_system_message', '_bx_cnv_menu_item_title_message', 'page.php?i=start-convo&profiles={profile_id}', '', '', 'envelope', '', 2147483646, 1, 0, 0),
+('trigger_group_view_actions', 'bx_convos', 'convos-compose', '_bx_cnv_menu_item_title_system_message_group', '_bx_cnv_menu_item_title_message_group', 'page.php?i=start-convo&profiles={recipients}', '', '', 'envelope', '', 2147483646, 1, 0, 0);
 
 -- GRID
 
@@ -174,8 +173,8 @@ INSERT INTO `sys_acl_matrix` (`IDLevel`, `IDAction`) VALUES
 
 
 -- COMMENTS
-INSERT INTO `sys_objects_cmts` (`Name`, `Table`, `CharsPostMin`, `CharsPostMax`, `CharsDisplayMax`, `Nl2br`, `PerView`, `PerViewReplies`, `BrowseType`, `IsBrowseSwitch`, `PostFormPosition`, `NumberOfLevels`, `IsDisplaySwitch`, `IsRatable`, `ViewingThreshold`, `IsOn`, `RootStylePrefix`, `BaseUrl`, `ObjectVote`, `TriggerTable`, `TriggerFieldId`, `TriggerFieldTitle`, `TriggerFieldComments`, `ClassName`, `ClassFile`) VALUES
-('bx_convos', 'bx_convos_cmts', 1, 5000, 1000, 1, 5, 3, 'tail', 1, 'bottom', 1, 1, 0, -3, 1, 'cmt', 'page/view-convo&id={object_id}', '', 'bx_convos_conversations', 'id', '', 'comments', 'BxCnvCmts', 'modules/boonex/convos/classes/BxCnvCmts.php');
+INSERT INTO `sys_objects_cmts` (`Name`, `Table`, `CharsPostMin`, `CharsPostMax`, `CharsDisplayMax`, `Nl2br`, `PerView`, `PerViewReplies`, `BrowseType`, `IsBrowseSwitch`, `PostFormPosition`, `NumberOfLevels`, `IsDisplaySwitch`, `IsRatable`, `ViewingThreshold`, `IsOn`, `RootStylePrefix`, `BaseUrl`, `ObjectVote`, `TriggerTable`, `TriggerFieldId`, `TriggerFieldAuthor`, `TriggerFieldTitle`, `TriggerFieldComments`, `ClassName`, `ClassFile`) VALUES
+('bx_convos', 'bx_convos_cmts', 1, 5000, 1000, 1, 5, 3, 'tail', 1, 'bottom', 1, 1, 1, -3, 1, 'cmt', 'page.php?i=view-convo&id={object_id}', '', 'bx_convos_conversations', 'id', 'author', '', 'comments', 'BxCnvCmts', 'modules/boonex/convos/classes/BxCnvCmts.php');
 
 -- VIEWS
 INSERT INTO `sys_objects_view` (`name`, `table_track`, `period`, `is_on`, `trigger_table`, `trigger_field_id`, `trigger_field_count`, `class_name`, `class_file`) VALUES 
@@ -189,5 +188,12 @@ SET @iHandler := LAST_INSERT_ID();
 
 INSERT INTO `sys_alerts` (`unit`, `action`, `handler_id`) VALUES
 ('bx_convos', 'commentPost', @iHandler),
-('bx_convos', 'commentRemoved', @iHandler);
+('bx_convos', 'commentRemoved', @iHandler),
+('profile', 'delete', @iHandler);
+
+-- EMAIL TEMPLATES
+
+INSERT INTO `sys_email_templates` (`Module`, `NameSystem`, `Name`, `Subject`, `Body`) VALUES
+('bx_convos', '_bx_cnv_email_new_message', 'bx_cnv_new_message', '_bx_cnv_email_new_message_subject', '_bx_cnv_email_new_message_body'),
+('bx_convos', '_bx_cnv_email_new_reply', 'bx_cnv_new_reply', '_bx_cnv_email_new_reply_subject', '_bx_cnv_email_new_reply_body');
 

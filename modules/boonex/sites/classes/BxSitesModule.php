@@ -4,13 +4,12 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Sites Sites
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
 
-bx_import ('BxDolModule');
-bx_import ('BxDolAcl');
+bx_import('BxDolAcl');
 
 define('BX_SITES_ACCOUNT_STATUS_UNCONFIRMED', 'unconfirmed');
 define('BX_SITES_ACCOUNT_STATUS_PENDING', 'pending');
@@ -62,7 +61,6 @@ class BxSitesModule extends BxDolModule
 
     public function serviceBrowse()
     {
-        bx_import('BxDolGrid');
         $oGrid = BxDolGrid::getObjectInstance('bx_sites_browse');
         if(!$oGrid)
             return '';
@@ -104,7 +102,6 @@ class BxSitesModule extends BxDolModule
         if($sMsg !== CHECK_ACTION_RESULT_ALLOWED)
             return MsgBox($sMsg);
 
-        bx_import('BxDolGrid');
         $oGrid = BxDolGrid::getObjectInstance('bx_sites_overview');
         if(!$oGrid)
             return '';

@@ -4,7 +4,7 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Contact Contact
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
@@ -17,13 +17,13 @@ $aConfig = array(
     'name' => 'bx_contact',
     'title' => 'Contact',
     'note' => 'Contact module.',
-    'version' => '8.0.1.DEV',
+    'version' => '9.0.1.DEV',
     'vendor' => 'BoonEx',
 	'help_url' => 'http://feed.boonex.com/?section={module_name}',
     
 
     'compatible_with' => array(
-        '8.0.x'
+        '9.0.x'
     ),
 
     /**
@@ -34,6 +34,11 @@ $aConfig = array(
 
     'db_prefix' => 'bx_contact_',
     'class_prefix' => 'BxContact',
+
+    /**
+     * Category for language keys.
+     */
+    'language_category' => 'Contact',
 
     /**
      * Installation/Uninstallation Section.
@@ -62,28 +67,6 @@ $aConfig = array(
      */
     'dependencies' => array(),
 
-    /**
-     * Category for language keys.
-     */
-    'language_category' => 'Contact',
-
-    /**
-     * Permissions Section
-     */
-    'install_permissions' => array(),
-    'uninstall_permissions' => array(),
-
-    /**
-     * Introduction and Conclusion Section.
-     */
-    'install_info' => array(
-        'introduction' => 'inst_intro.html',
-        'conclusion' => 'inst_concl.html'
-    ),
-    'uninstall_info' => array(
-        'introduction' => 'uninst_intro.html',
-        'conclusion' => 'uninst_concl.html'
-    )
 );
 
 /** @} */

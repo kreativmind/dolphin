@@ -4,12 +4,10 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Sites Sites
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
-
-bx_import('BxDolStudioInstaller');
 
 class BxSitesInstaller extends BxDolStudioInstaller
 {

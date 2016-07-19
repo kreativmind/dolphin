@@ -3,14 +3,14 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinInstall Dolphin Install
+ * @defgroup    TridentInstall Trident Install
  * @{
  */
 
 define ('BX_DOL_INSTALL',  true);
 define ('BX_SKIP_INSTALL_CHECK', true);
 
-define ('BX_DOL_VER', '8.0.0-DEV5');
+define ('BX_DOL_VER', '9.0.0-DEV2');
 
 define ('BX_INSTALL_DEFAULT_LANGUAGE', 'en');
 

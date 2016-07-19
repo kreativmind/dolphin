@@ -3,11 +3,9 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Dolphin Core
+ * @defgroup    TridentCore Trident Core
  * @{
  */
-
-bx_import('BxDolSession');
 
 define('BX_DOL_FORM_METHOD_GET', 'get');
 define('BX_DOL_FORM_METHOD_POST', 'post');
@@ -553,7 +551,6 @@ define('BX_DATA_VALUES_ADDITIONAL', 'LKey2'); ///< Use additional values for dat
  * Printing the form for adding new record to the database:
  *
  * @code
- *      bx_import('BxDolForm');
  *      $oForm = BxDolForm::getObjectInstance('sample_form_objects', 'sample_form_objects_add'); // get form instance for specified form object and display
  *      if (!$oForm)
  *          die('"sample_form_objects_add" form object or "sample_form_objects_add" display is not defined');
@@ -573,7 +570,6 @@ define('BX_DATA_VALUES_ADDITIONAL', 'LKey2'); ///< Use additional values for dat
  *      if (!$aRecord)
  *          die("$iEditId record wasn't found.");
  *
- *      bx_import('BxDolForm');
  *      $oForm = BxDolForm::getObjectInstance('sample_form_objects', 'sample_form_objects_edit'); // get form instance for specified form object and display
  *      if (!$oForm)
  *          die('"sample_form_objects_edit" form object or "sample_form_objects_edit" display is not defined');
@@ -586,8 +582,6 @@ define('BX_DATA_VALUES_ADDITIONAL', 'LKey2'); ///< Use additional values for dat
  * Example of custom form class and custom checking helper class:
  *
  * @code
- *      bx_import('BxTemplFormView');
- *
  *      class BxSampleForm extends BxTemplFormView {
  *
  *          public function __construct ($aInfo, $oTemplate = false) {
@@ -716,6 +710,7 @@ define('BX_DATA_VALUES_ADDITIONAL', 'LKey2'); ///< Use additional values for dat
  */
 class BxDolForm extends BxDol implements iBxDolReplaceable
 {
+    static $TYPES_SKIP = array('files' => 1);
     static $TYPES_CHECKBOX = array('checkbox' => 1, 'switcher' => 1);
     static $TYPES_TEXT = array('text' => 1, 'textarea' => 1);
     static $TYPES_FILE = array('file' => 1);
@@ -767,27 +762,23 @@ class BxDolForm extends BxDol implements iBxDolReplaceable
      * @param $sObject object name
      * @return object instance or false on error
      */
-    static public function getObjectInstance($sObject, $sDisplayName)
+    static public function getObjectInstance($sObject, $sDisplayName, $oTemplate = false)
     {
         if (isset($GLOBALS['bxDolClasses']['BxDolForm!'.$sObject.'!'.$sDisplayName]))
             return $GLOBALS['bxDolClasses']['BxDolForm!'.$sObject.'!'.$sDisplayName];
 
-        bx_import('BxDolFormQuery');
         $aObject = BxDolFormQuery::getFormArray($sObject, $sDisplayName);
         if (!$aObject || !is_array($aObject))
             return false;
 
-        bx_import('BxTemplFormView');
         $sClass = 'BxTemplFormView';
         if (!empty($aObject['override_class_name'])) {
             $sClass = $aObject['override_class_name'];
             if (!empty($aObject['override_class_file']))
                 require_once(BX_DIRECTORY_PATH_ROOT . $aObject['override_class_file']);
-            else
-                bx_import($sClass);
         }
 
-        $o = new $sClass($aObject);
+        $o = new $sClass($aObject, $oTemplate);
 
         return ($GLOBALS['bxDolClasses']['BxDolForm!'.$sObject.'!'.$sDisplayName] = $o);
     }
@@ -801,7 +792,6 @@ class BxDolForm extends BxDol implements iBxDolReplaceable
      */
     public static function getDataItems($sKey, $isUseForSet = false, $sUseValues = BX_DATA_VALUES_DEFAULT)
     {
-        bx_import('BxDolFormQuery');
         return BxDolFormQuery::getDataItems($sKey, $isUseForSet, $sUseValues);
     }
 
@@ -816,7 +806,7 @@ class BxDolForm extends BxDol implements iBxDolReplaceable
 
         $aValuesDef = array ();
         foreach ($this->aInputs as $k => $a) {
-            if (!isset($a['value']) || !isset($a['db']['pass']) || isset(self::$TYPES_CHECKBOX[$a['type']]))
+            if (!isset($a['value']) || !isset($a['db']['pass']) || isset(self::$TYPES_CHECKBOX[$a['type']]) || isset(self::$TYPES_SKIP[$a['type']]))
                 continue;
             $aValuesDef[$k] = $a['value'];
         }
@@ -851,7 +841,7 @@ class BxDolForm extends BxDol implements iBxDolReplaceable
         if (!$sSql)
             return false;
         $oDb = BxDolDb::getInstance();
-        if ($oDb->res($sSql))
+        if ($oDb->query($sSql))
             return $oDb->lastId();
         return false;
     }
@@ -863,7 +853,7 @@ class BxDolForm extends BxDol implements iBxDolReplaceable
         $sSql = $oChecker->dbUpdate($val, $this->aParams['db'], $this->aInputs, $aValsToAdd, $aTrackTextFieldsChanges);
         if (!$sSql)
             return false;
-        return BxDolDb::getInstance()->res($sSql);
+        return BxDolDb::getInstance()->query($sSql);
     }
 
     function delete ($val)
@@ -873,7 +863,7 @@ class BxDolForm extends BxDol implements iBxDolReplaceable
         $sSql = $oChecker->dbDelete($val, $this->aParams['db'], $this->aInputs);
         if (!$sSql)
             return false;
-        return BxDolDb::getInstance()->res($sSql);
+        return BxDolDb::getInstance()->query($sSql);
     }
 
     function generateUri ()
@@ -958,6 +948,20 @@ class BxDolForm extends BxDol implements iBxDolReplaceable
         return $aData[$sKey] = $mixedValue;
     }
 
+    /**
+     * Check if field exists
+     * @param $sName field name 
+     * @param $bCheckAllFields true - check all fields; false - all fields except: password, captcha, hidden, file, button, image, reset, submit, block_header, input_set
+     * @return true if field exists or false otherwise
+     */
+    public function isFieldExist($sName, $bCheckAllFields = false)
+    {
+        if (!isset($this->aInputs[$sName]))
+            return false;
+        return $bCheckAllFields ? true : !in_array($this->aInputs[$sName]['type'], array('password', 'captcha', 'hidden', 'button', 'reset', 'submit', 'block_header', 'input_set'));
+    }
+
+
     // Static Methods related to CSRF Tocken
     public static function genCsrfToken($bReturn = false)
     {
@@ -998,7 +1002,6 @@ class BxDolForm extends BxDol implements iBxDolReplaceable
             if ((isset($aInput['type']) && $aInput['type'] != 'files') || !isset($aInput['ghost_template']))
                 continue;
 
-            bx_import('BxDolFormNested');
             if (!(is_array($aInput['ghost_template']) && isset($aInput['ghost_template']['inputs'])) && !(is_object($aInput['ghost_template']) && $aInput['ghost_template'] instanceof BxDolFormNested))
                 continue;
 
@@ -1048,10 +1051,9 @@ class BxDolForm extends BxDol implements iBxDolReplaceable
      * @param $aInput form field array
      * @return boolean
      */
-    protected function _isVisible ($aInput)
+    static public function isVisible ($aInput)
     {
-        bx_import('BxDolAcl');
-        return BxDolAcl::getInstance()->isMemberLevelInSet($aInput['visible_for_levels']);
+        return isset($aInput['visible_for_levels']) ? BxDolAcl::getInstance()->isMemberLevelInSet($aInput['visible_for_levels']) : true;
     }
 
     protected function _genMethodName ($s)
@@ -1128,6 +1130,9 @@ class BxDolFormChecker
         $sSubmitName = false;
 
         foreach ($aInputs as $k => $a) {
+            if (isset($a['visible_for_levels']) && !BxDolForm::isVisible($a))
+                continue;
+
             if (empty($a['name']) || 'submit' == $a['type'] || 'reset' == $a['type'] || 'button' == $a['type'] || 'value' == $a['type']) {
                 if (isset($a['type']) && 'submit' == $a['type'])
                     $sSubmitName = $k;
@@ -1147,7 +1152,7 @@ class BxDolFormChecker
             if (!isset ($a['checker']))  {
                 if (isset(BxDolForm::$TYPES_CHECKBOX[$a['type']]))
                     $aInputs[$k]['checked'] = (isset($aInputs[$k]['value']) && $aInputs[$k]['value'] == $val);
-                elseif (!isset(BxDolForm::$TYPES_FILE[$a['type']]))
+                elseif (!isset(BxDolForm::$TYPES_FILE[$a['type']]) && !isset(BxDolForm::$TYPES_SKIP[$a['type']]))
                     $aInputs[$k]['value'] = bx_process_input($val);
                 continue;
             }
@@ -1169,7 +1174,7 @@ class BxDolFormChecker
 
             if (isset(BxDolForm::$TYPES_CHECKBOX[$a['type']]))
                 $aInputs[$k]['checked'] = ($aInputs[$k]['value'] == $val);
-            elseif (!isset(BxDolForm::$TYPES_FILE[$a['type']]))
+            elseif (!isset(BxDolForm::$TYPES_FILE[$a['type']]) && !isset(BxDolForm::$TYPES_SKIP[$a['type']]))
                 $aInputs[$k]['value'] = bx_process_input($val);
         }
 
@@ -1218,16 +1223,14 @@ class BxDolFormChecker
     // db functions
     function serializeDbValues (&$aInputs, &$aValsToAdd, &$aTrackTextFieldsChanges = null)
     {
-        $oDb = BxDolDb::getInstance();
         $aValsToUpdate = array();
-        $s = '';
 
         if (null !== $aTrackTextFieldsChanges && isset($aTrackTextFieldsChanges['data']))
             $aTrackTextFieldsChanges['changed_fields'] = array();
 
         // get values from form description array
         foreach ($aInputs as $k => $a) {
-            if (!isset ($a['db'])) continue;
+            if (!isset ($a['db']) || !BxDolForm::isVisible($a)) continue;
             $valClean = $this->get ($a['name'], $a['db']['pass'], !empty($a['db']['params']) ? $a['db']['params'] : array());
             $aValsToUpdate[$a['name']] = $valClean;
             $aInputs[$k]['db']['value'] = $valClean;
@@ -1242,9 +1245,7 @@ class BxDolFormChecker
         }
 
         // build SQL query part
-        foreach ($aValsToUpdate as $k => $val)
-            $s .= $oDb->prepare("`{$k}` = ?,", $val);
-        return $s ? substr ($s, 0, -1) : '';
+        return BxDolDb::getInstance()->arrayToSQL($aValsToUpdate);
     }
 
     function dbInsert (&$aDb, &$aInputs, $aValsToAdd = array(), $isIgnore = false)
@@ -1276,7 +1277,7 @@ class BxDolFormChecker
         if (!$sFields)
             return '';
 
-        return "UPDATE `{$aDb['table']}` SET $sFields WHERE " . $oDb->prepare("`{$aDb['key']}` = ?", $val);
+        return $oDb->prepare("UPDATE `{$aDb['table']}` SET $sFields WHERE `{$aDb['key']}` = ?", $val);
     }
 
     function dbDelete ($val, &$aDb, &$aInputs)
@@ -1286,13 +1287,14 @@ class BxDolFormChecker
 
         $oDb = BxDolDb::getInstance();
 
-        return "DELETE FROM `{$aDb['table']}` WHERE " . $oDb->prepare("`{$aDb['key']}` = ?", $val);
+        return $oDb->prepare("DELETE FROM `{$aDb['table']}` WHERE `{$aDb['key']}` = ?", $val);
     }
 
     function fillWithValues (&$aInputs, &$aValues)
     {
         foreach ($aInputs as $k => $a) {
-            if (!isset($aValues[$k])) continue;
+            if (!isset($aValues[$k]) || isset(BxDolForm::$TYPES_SKIP[$aInputs[$k]['type']])) 
+                continue;
 
             if (isset(BxDolForm::$TYPES_CHECKBOX[$aInputs[$k]['type']])) {
                 $aInputs[$k]['checked'] = isset($aInputs[$k]['value']) ? ($aInputs[$k]['value'] == $aValues[$k]) : false;
@@ -1355,11 +1357,10 @@ class BxDolFormCheckerHelper
     }
     static public function checkEmail($s)
     {
-        return self::checkPreg ($s, '/^[a-z0-9_\-]+(\.[_a-z0-9\-]+)*@([_a-z0-9\-]+\.)+([a-z]{2}|aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel)$/i');
+        return self::checkPreg ($s, "/(([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?/");
     }
     static public function checkCaptcha($s)
     {
-        bx_import('BxDolCaptcha');
         $oCaptcha = BxDolCaptcha::getObjectInstance();
         if (!$oCaptcha)
             return true;
@@ -1442,6 +1443,19 @@ class BxDolFormCheckerHelper
         }
         return bx_process_input ($s, BX_DATA_TEXT); // "strip tags" option was here in 7.0
     }
+
+	static public function passXssMultiline ($s)
+    {
+        if (is_array($s)) {
+            $a = array ();
+            foreach ($s as $k => $v) {
+                $a[$k] = bx_process_input ($v, BX_DATA_TEXT_MULTILINE);
+            }
+            return $a;
+        }
+        return bx_process_input ($s, BX_DATA_TEXT_MULTILINE);
+    }
+
     static public function passXssHtml ($s)
     {
         if (is_array($s)) {

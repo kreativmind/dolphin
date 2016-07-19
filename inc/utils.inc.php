@@ -3,9 +3,11 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Dolphin Core
+ * @defgroup    TridentCore Trident Core
  * @{
  */
+
+define('BX_DOL_LINK_CLASS', 'bx-link'); ///< class to add to every link in user content
 
 define('BX_DATA_TEXT', 1); ///< regular text data type
 define('BX_DATA_TEXT_MULTILINE', 2); ///< regular multiline text data type
@@ -74,21 +76,6 @@ function html2txt($content, $tags = "")
     }
 
     return $content;
-}
-
-function html_encode($text)
-{
-     $searcharray =  array(
-    "'([-_\w\d.]+@[-_\w\d.]+)'",
-    "'((?:(?!://).{3}|^.{0,2}))(www\.[-\d\w\.\/]+)'",
-    "'(http[s]?:\/\/[-_~\w\d\.\/]+)'");
-
-    $replacearray = array(
-    "<a href=\"mailto:\\1\">\\1</a>",
-    "\\1http://\\2",
-    "<a href=\"\\1\" target=_blank>\\1</a>");
-
-   return preg_replace($searcharray, $replacearray, stripslashes($text));
 }
 
 /**
@@ -248,7 +235,7 @@ function process_pass_data( $text, $strip_tags = 0 )
  */
 function htmlspecialchars_adv( $string )
 {
-    return htmlspecialchars($string, ENT_COMPAT, 'UTF-8');
+    return htmlspecialchars($string, ENT_COMPAT, 'UTF-8', false);
 }
 
 /**
@@ -256,15 +243,10 @@ function htmlspecialchars_adv( $string )
  */
 function sendMailTemplate($sTemplateName, $iAccountId = 0, $iProfileId = 0, $aReplaceVars = array(), $iEmailType = BX_EMAIL_NOTIFY)
 {
-    bx_import('BxDolLanguages');
-
-    bx_import('BxDolAccount');
-    $oAccount = BxDolAccount::getInstance($iAccountId);
-
-    bx_import('BxDolProfile');
     $oProfile = BxDolProfile::getInstance($iProfileId);
 
-    bx_import('BxDolEmailTemplates');
+    $oAccount = $iAccountId ? BxDolAccount::getInstance($iAccountId) : ($oProfile ? $oProfile->getAccountObject() : null);
+
     $oEmailTemplates = BxDolEmailTemplates::getInstance();
 
     if (!$oAccount || !$oProfile || !$oEmailTemplates)
@@ -282,9 +264,6 @@ function sendMailTemplate($sTemplateName, $iAccountId = 0, $iProfileId = 0, $aRe
  */
 function sendMailTemplateSystem($sTemplateName, $aReplaceVars = array(), $iEmailType = BX_EMAIL_SYSTEM)
 {
-    bx_import('BxDolLanguages');
-
-    bx_import('BxDolEmailTemplates');
     $oEmailTemplates = BxDolEmailTemplates::getInstance();
 
     if (!$oEmailTemplates)
@@ -314,8 +293,7 @@ function sendMail($sRecipientEmail, $sMailSubject, $sMailBody, $iRecipientID = 0
         return false;
 
     // get recipient account
-    bx_import('BxDolAccount');
-    $oAccount = BxDolAccount::getInstance($sRecipientEmail);
+    $oAccount = !$isDisableAlert ? BxDolAccount::getInstance($sRecipientEmail) : null;
     $aAccountInfo = $oAccount ? $oAccount->getInfo() : false;
 
     // don't send bulk emails if user didn't subscribed to site news or email is unconfirmed
@@ -329,18 +307,17 @@ function sendMail($sRecipientEmail, $sMailSubject, $sMailBody, $iRecipientID = 0
     // if profile id is provided - get profile's info
     $aRecipientInfo = false;
     if ($iRecipientID) {
-        bx_import('BxDolProfile');
         $oProfile = BxDolProfile::getInstance($iRecipientID);
         if ($oProfile)
             $aRecipientInfo = $oProfile->getInfo();
     }
 
     // get site vars
-    $sEmailNotify       = getParam('site_email_notify');
-    $sSiteTitle         = getParam('site_title');
+    $sEmailNotify = !$isDisableAlert ? getParam('site_email_notify') : $sRecipientEmail;
+    $sSiteTitle = !$isDisableAlert ? getParam('site_title') : 'Trident ' . BX_DOL_VERSION;
 
     // add unsubscribe link
-    if (empty($aPlus['unsubscribe'])) {
+    if (!$isDisableAlert && empty($aPlus['unsubscribe'])) {
         $aPlus['unsubscribe'] = '';
         if ($oAccount && (BX_EMAIL_MASS == $iEmailType || BX_EMAIL_NOTIFY == $iEmailType))
             $aPlus['unsubscribe'] = ($sLink = $oAccount->getUnsubscribeLink($iEmailType)) ? '<a href="' . BX_DOL_URL_ROOT . $sLink . '">' . _t('_sys_et_txt_unsubscribe') . '</a>' : '';
@@ -350,7 +327,6 @@ function sendMail($sRecipientEmail, $sMailSubject, $sMailBody, $iRecipientID = 0
     if ($aPlus || $iRecipientID) {
         if(!is_array($aPlus))
             $aPlus = array();
-        bx_import('BxDolEmailTemplates');
         $oEmailTemplates = BxDolEmailTemplates::getInstance();
         $sMailSubject = $oEmailTemplates->parseContent($sMailSubject, $aPlus, $iRecipientID);
         $sMailBody = $oEmailTemplates->parseContent($sMailBody, $aPlus, $iRecipientID);
@@ -405,7 +381,6 @@ function sendMail($sRecipientEmail, $sMailSubject, $sMailBody, $iRecipientID = 0
  */
 function get_templates_array($bEnabledOnly = true, $bShortInfo = true)
 {
-    bx_import('BxDolDb');
     $oDb = BxDolDb::getInstance();
 
     $sWhereAddon = $bEnabledOnly ? " AND `enabled`='1'" : "";
@@ -436,15 +411,13 @@ function getVisitorIP()
     return $ip;
 }
 
-function genFlag( $country )
+function genFlag($sLang = '', $oTemplate = null)
 {
-    return '<img src="' . genFlagUrl($country) . '" />';
-}
-
-function genFlagUrl($country)
-{
-    bx_import('BxDolTemplate');
-    return BxDolTemplate::getInstance()->getIconUrl('sys_fl_' . strtolower($country) . '.gif');
+    if (!$oTemplate)
+        $oTemplate = BxDolTemplate::getInstance();
+    $oTemplate->addCss(BX_DIRECTORY_PATH_PLUGINS_PUBLIC . 'flag-icon-css/css/|flag-icon.min.css');
+    $sFlag = BxDolLanguages::getInstance()->getLangFlag($sLang);
+    return '<span title="' . $sFlag . '" class="flag-icon flag-icon-' . $sFlag . '"></span>';
 }
 
 // print debug information ( e.g. arrays )
@@ -460,30 +433,36 @@ function echoDbg( $what, $desc = '' )
 function echoDbgLog($mWhat, $sDesc = '', $sFileName = 'debug.log')
 {
     $sCont =
-        '--- ' . date('r') . ' (' . BX_DOL_START_TIME . ") ---\n" .
+        '--- ' . date('r') . ' (' . BX_DOL_START . ") ---\n" .
         $sDesc . "\n" .
         print_r($mWhat, true) . "\n\n\n";
 
-    $rFile = fopen(BxDolConfig::getInstance()->get('path_dynamic', 'tmp') . $sFileName, 'a');
+    $rFile = fopen(BX_DIRECTORY_PATH_LOGS . $sFileName, 'a');
     fwrite($rFile, $sCont);
     fclose($rFile);
 }
 
+function echoJson($a)
+{
+	header('Content-type: text/html; charset=utf-8');
+
+	echo json_encode($a);
+}
+
 function clear_xss($val)
 {
-    if ($GLOBALS['logged']['admin'])
-        return $val;
-
     // HTML Purifier plugin
     global $oHtmlPurifier;
-    require_once( BX_DIRECTORY_PATH_PLUGINS . 'htmlpurifier/HTMLPurifier.standalone.php' );
-    if (!isset($oHtmlPurifier)) {
+    if (!isset($oHtmlPurifier) && !$GLOBALS['logged']['admin']) {
+
+        require_once( BX_DIRECTORY_PATH_PLUGINS . 'htmlpurifier/HTMLPurifier.standalone.php' );
 
         HTMLPurifier_Bootstrap::registerAutoload();
 
         $oConfig = HTMLPurifier_Config::createDefault();
 
         $oConfig->set('Cache.SerializerPath', rtrim(BX_DIRECTORY_PATH_CACHE, '/'));
+        $oConfig->set('Cache.SerializerPermissions', BX_DOL_DIR_RIGHTS);
 
         $oConfig->set('HTML.SafeObject', 'true');
         $oConfig->set('Output.FlashCompat', 'true');
@@ -495,15 +474,41 @@ function clear_xss($val)
             $oConfig->set('HTML.Nofollow', 'true');
         }
 
-        $oConfig->set('Filter.Custom', array (new HTMLPurifier_Filter_YouTube(), new HTMLPurifier_Filter_YoutubeIframe()));
+        $oConfig->set('Filter.Custom', array (new HTMLPurifier_Filter_YouTube(), new HTMLPurifier_Filter_YoutubeIframe(), new HTMLPurifier_Filter_AddBxLinksClass()));
 
-        $oDef = $oConfig->getHTMLDefinition(true);
-        $oDef->addAttribute('a', 'target', 'Enum#_blank,_self,_target,_top');
+	    $oConfig->set('HTML.DefinitionID', 'html5-definitions');
+		$oConfig->set('HTML.DefinitionRev', 1);
+		if ($def = $oConfig->maybeGetRawHTMLDefinition()) {
+		    $def->addElement('section', 'Block', 'Flow', 'Common');
+		    $def->addElement('nav',     'Block', 'Flow', 'Common');
+		    $def->addElement('article', 'Block', 'Flow', 'Common');
+		    $def->addElement('aside',   'Block', 'Flow', 'Common');
+		    $def->addElement('header',  'Block', 'Flow', 'Common');
+		    $def->addElement('footer',  'Block', 'Flow', 'Common');
+		    $def->addElement('video', 'Block', 'Optional: (source, Flow) | (Flow, source) | Flow', 'Common', array(
+		        'src' => 'URI',
+		        'type' => 'Text',
+		        'width' => 'Length',
+		        'height' => 'Length',
+		        'poster' => 'URI',
+		        'preload' => 'Enum#auto,metadata,none',
+		        'controls' => 'Bool',
+		    ));
+		    $def->addElement('source', 'Block', 'Flow', 'Common', array(
+		        'src' => 'URI',
+		        'type' => 'Text',
+		    ));
+		}
 
         $oHtmlPurifier = new HTMLPurifier($oConfig);
     }
 
-    return $oHtmlPurifier->purify($val);
+    if (!$GLOBALS['logged']['admin'])
+        $val = $oHtmlPurifier->purify($val);
+
+    bx_alert('system', 'clear_xss', 0, 0, array('oHtmlPurifier' => $oHtmlPurifier, 'return_data' => &$val));
+
+    return $val;
 }
 
 //--------------------------------------- friendly permalinks --------------------------------------//
@@ -533,7 +538,6 @@ function uriGenerate ($s, $sTable, $sField, $sEmpty = '-')
 
 function uriFilter ($s, $sEmpty = '-')
 {
-    bx_import('BxTemplConfig');
     if (BxTemplConfig::getInstance()->bAllowUnicodeInPreg)
         $s = get_mb_replace ('/[^\pL^\pN]+/u', '-', $s); // unicode characters
     else
@@ -547,7 +551,6 @@ function uriFilter ($s, $sEmpty = '-')
 
 function uriCheckUniq ($s, $sTable, $sField)
 {
-    bx_import('BxDolDb');
     $oDb = BxDolDb::getInstance();
 
     $sSql = $oDb->prepare("SELECT 1 FROM `$sTable` WHERE `$sField`=? LIMIT 1", $s);
@@ -587,7 +590,7 @@ function bx_mb_strpos ($s, $sReplacement, $iStart = 0)
  */
 function bx_import($sClassName, $mixedModule = array())
 {
-    if (class_exists($sClassName))
+    if (class_exists($sClassName, false))
         return;
 
     $aModule = false;
@@ -595,7 +598,6 @@ function bx_import($sClassName, $mixedModule = array())
         if (is_array($mixedModule)) {
             $aModule = $mixedModule;
         } elseif (is_string($mixedModule)) {
-            bx_import('BxDolModule');
             $o = BxDolModule::getInstance($mixedModule);
             $aModule = $o->_aModule;
         } elseif (is_bool($mixedModule) && true === $mixedModule) {
@@ -604,7 +606,7 @@ function bx_import($sClassName, $mixedModule = array())
     }
 
     if ($aModule) {
-        if (class_exists($aModule['class_prefix'] . $sClassName))
+        if (class_exists($aModule['class_prefix'] . $sClassName, false))
             return;
         require_once (BX_DIRECTORY_PATH_MODULES . $aModule['path'] . 'classes/' . $aModule['class_prefix'] . $sClassName . '.php');
         return;
@@ -634,12 +636,10 @@ function bx_import($sClassName, $mixedModule = array())
         }
     }
 
-    if (0 == strncmp($sClassName, 'BxTempl', 7) && !class_exists($sClassName)) {
+    if (0 == strncmp($sClassName, 'BxTempl', 7)) {
         if(0 == strncmp($sClassName, 'BxTemplStudio', 13)) {
-            bx_import('BxDolStudioTemplate');
             $sPath = BX_DIRECTORY_PATH_MODULES . BxDolStudioTemplate::getInstance()->getPath() . 'data/template/studio/scripts/' . $sClassName . '.php';
         } else {
-            bx_import('BxDolTemplate');
             $sPath = BX_DIRECTORY_PATH_MODULES . BxDolTemplate::getInstance()->getPath() . 'data/template/system/scripts/' . $sClassName . '.php';
         }
 
@@ -653,6 +653,15 @@ function bx_import($sClassName, $mixedModule = array())
 }
 
 /**
+ * used in spl_autoload_register() function, so no need to call bx_import for system classes
+ */
+function bx_autoload($sClassName)
+{
+    if (0 == strncmp($sClassName, 'BxDol', 5) || 0 == strncmp($sClassName, 'BxBase', 6) || 0 == strncmp($sClassName, 'BxTempl', 7))
+        bx_import($sClassName);
+}
+
+/**
  * Gets an instance of class pathing necessary parameters if it's necessary.
  *
  * @param string $sClassName class name.
@@ -660,19 +669,26 @@ function bx_import($sClassName, $mixedModule = array())
  * @param array $aModule an array with module description. Is used when the requested class is located in some module.
  * @return unknown
  */
-function bx_instance($sClassName, $aParams = array(), $aModule = array())
+function bx_instance($sClassName, $aParams = array(), $mixedModule = array())
 {
     if(isset($GLOBALS['bxDolClasses'][$sClassName]))
         return $GLOBALS['bxDolClasses'][$sClassName];
 
-    bx_import((empty($aModule) ? $sClassName : str_replace($aModule['class_prefix'], '', $sClassName)), $aModule);
+    if ($mixedModule) {
+        if (!is_array($mixedModule)) {
+            $o = BxDolModule::getInstance($mixedModule);
+            $mixedModule = $o->_aModule;
+        }
+        $sClassName = bx_ltrim_str($sClassName, $mixedModule['class_prefix']);
+        bx_import($sClassName, $mixedModule);
+        $sClassName = $mixedModule['class_prefix'] . $sClassName;
+    }
 
     $oClass = new ReflectionClass($sClassName);
 
     $GLOBALS['bxDolClasses'][$sClassName] = empty($aParams) ? $oClass->newInstance() : $oClass->newInstanceArgs($aParams);
 
     return $GLOBALS['bxDolClasses'][$sClassName];
-
 }
 
 
@@ -698,10 +714,10 @@ function bx_js_string ($mixedInput, $iQuoteType = BX_ESCAPE_STR_AUTO)
         $aUnits['<script'] = '<scr" + "ipt';
         $aUnits['</script>'] = '</scr" + "ipt>';
     } else {
-        $aUnits['"'] = '&quote;';
+        $aUnits['"'] = '&quot;';
         $aUnits["'"] = '&apos;';
-        $aUnits["<"] = '&lt;';
-        $aUnits[">"] = '&gt;';
+        $aUnits["<script>"] = '&lt;script&gt;';
+        $aUnits["</script>"] = '&lt;/script&gt;';
     }
     return str_replace(array_keys($aUnits), array_values($aUnits), $mixedInput);
 }
@@ -745,36 +761,64 @@ function bx_php_string_quot ($mixedInput)
  *
  * @param string $sFileUrl - file URL to be read.
  * @param array $aParams - an array of parameters to be pathed with URL.
+ * @param string $sMethod - post or get.
+ * @param array $aHeaders - custom headers.
  * @return string the file's contents.
  */
-function bx_file_get_contents($sFileUrl, $aParams = array(), $bChangeTimeout = false)
+function bx_file_get_contents($sFileUrl, $aParams = array(), $sMethod = 'get', $aHeaders = array(), &$sHttpCode = null, $aBasicAuth = array())
 {
-    if ($aParams)
-        $sFileUrl = bx_append_url_params($sFileUrl, $aParams);
+    $bChangeTimeout = false;
+
+    if ('post' != $sMethod)
+    	$sFileUrl = bx_append_url_params($sFileUrl, $aParams);
 
     $sResult = '';
     if(function_exists('curl_init')) {
         $rConnect = curl_init();
 
+        curl_setopt($rConnect, CURLOPT_TIMEOUT, 10);
         curl_setopt($rConnect, CURLOPT_URL, $sFileUrl);
-        curl_setopt($rConnect, CURLOPT_HEADER, 0);
+        curl_setopt($rConnect, CURLOPT_HEADER, NULL === $sHttpCode ? false : true);
         curl_setopt($rConnect, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($rConnect, CURLOPT_FOLLOWLOCATION, 1);
 
         if ($bChangeTimeout) {
             curl_setopt($rConnect, CURLOPT_CONNECTTIMEOUT, 3);
             curl_setopt($rConnect, CURLOPT_TIMEOUT, 3);
         }
 
+        if (!ini_get('open_basedir'))
+            curl_setopt($rConnect, CURLOPT_FOLLOWLOCATION, 1);
+
+        if ($aHeaders)
+            curl_setopt($rConnect, CURLOPT_HTTPHEADER, $aHeaders);
+
+        if ($aBasicAuth)
+            curl_setopt($rConnect, CURLOPT_USERPWD, $aBasicAuth['user'] . ':' . $aBasicAuth['password']);
+
+        if ('post' == $sMethod) {
+            curl_setopt($rConnect, CURLOPT_POST, true);
+            curl_setopt($rConnect, CURLOPT_POSTFIELDS, $aParams);
+        }
+
         $sAllCookies = '';
         foreach($_COOKIE as $sKey=>$sValue){
-            $sAllCookies .= $sKey."=".$sValue.";";
+            $sAllCookies .= $sKey . '=' . $sValue . ';';
         }
         curl_setopt($rConnect, CURLOPT_COOKIE, $sAllCookies);
 
         $sResult = curl_exec($rConnect);
+
+        if (curl_errno($rConnect) == 60) { // CURLE_SSL_CACERT
+            curl_setopt($rConnect, CURLOPT_CAINFO, BX_DIRECTORY_PATH_PLUGINS . 'curl/cacert.pem');
+            $sResult = curl_exec($rConnect);
+        }
+
+        if (NULL !== $sHttpCode)
+            $sHttpCode = curl_getinfo($rConnect, CURLINFO_HTTP_CODE);
+
         curl_close($rConnect);
-    } else {
+    }
+    else {
 
         $iSaveTimeout = false;
         if ($bChangeTimeout) {
@@ -790,6 +834,56 @@ function bx_file_get_contents($sFileUrl, $aParams = array(), $bChangeTimeout = f
     }
 
     return $sResult;
+}
+
+function bx_get_site_info($sSourceUrl, $aProcessAdditionalTags = array())
+{
+    $aResult = array();
+    $sContent = bx_file_get_contents($sSourceUrl);
+
+    if ($sContent) {
+        $sCharset = '';
+        preg_match("/<meta.+charset=([A-Za-z0-9-]+).+>/i", $sContent, $aMatch);
+        if (isset($aMatch[1]))
+            $sCharset = $aMatch[1];
+
+        if (preg_match("/<title[^>]*>(.*)<\/title>/i", $sContent, $aMatch))
+            $aResult['title'] = $aMatch[1];
+        else
+            $aResult['title'] = parse_url($sSourceUrl, PHP_URL_HOST);
+
+        $aResult['description'] = bx_parse_html_tag($sContent, 'meta', 'name', 'description', 'content', $sCharset);
+        $aResult['keywords'] = bx_parse_html_tag($sContent, 'meta', 'name', 'keywords', 'content', $sCharset);
+
+        if ($aProcessAdditionalTags) {
+
+            foreach ($aProcessAdditionalTags as $k => $a) {
+                $aResult[$k] = bx_parse_html_tag(
+                    $sContent, 
+                    isset($a['tag']) ? $a['tag'] : 'meta', 
+                    isset($a['name_attr']) ? $a['name_attr'] : 'itemprop', 
+                    isset($a['name']) ? $a['name'] : $k, 
+                    isset($a['content_attr']) ? $a['content_attr'] : 'content', 
+                    $sCharset); 
+            }
+
+        }
+    }
+
+    return $aResult;
+}
+
+function bx_parse_html_tag ($sContent, $sTag, $sAttrNameName, $sAttrNameValue, $sAttrContentName, $sCharset = false)
+{
+    if (!preg_match("/<{$sTag}\s+{$sAttrNameName}[='\" ]+{$sAttrNameValue}['\"]\s+{$sAttrContentName}[='\" ]+([^'>\"]*)['\"][^>]*>/i", $sContent, $aMatch) || !isset($aMatch[1]))
+        preg_match("/<{$sTag}\s+{$sAttrContentName}[='\" ]+([^'>\"]*)['\"]\s+{$sAttrNameName}[='\" ]+{$sAttrNameValue}['\"][^>]*>/i", $sContent, $aMatch);
+
+    $s = isset($aMatch[1]) ? $aMatch[1] : '';
+
+    if ($s && $sCharset)
+        $s = mb_convert_encoding($s, 'UTF-8', $sCharset);
+
+    return $s;
 }
 
 // calculation ini_get('upload_max_filesize') in bytes as example
@@ -840,7 +934,19 @@ function genRndSalt()
 // Encrypt User Password
 function encryptUserPwd($sPwd, $sSalt)
 {
-    return sha1(md5($sPwd) . $sSalt);
+	$sAlgo = defined('BX_PWD_ALGO') ? BX_PWD_ALGO : '';
+
+    switch ($sAlgo) {
+    	case 'crypt':
+            return crypt($sPwd, BX_PWD_ALGO_SALT);
+
+        case 'sha1_crypt_salt':
+            return sha1(crypt($sPwd, BX_PWD_ALGO_SALT) . $sSalt);
+
+        case 'sha1_md5_salt':
+        default:
+            return sha1(md5($sPwd) . $sSalt);
+    }
 }
 
 function bx_get ($sName, $sMethod = false)
@@ -880,8 +986,15 @@ function bx_append_url_params ($sUrl, $mixedParams)
     $sParams = false == strpos($sUrl, '?') ? '?' : '&';
 
     if (is_array($mixedParams)) {
-        foreach($mixedParams as $sKey => $sValue)
-            $sParams .= $sKey . '=' . $sValue . '&';
+        foreach($mixedParams as $sKey => $sValue) {
+            if (!is_array($sValue)) {
+                $sParams .= $sKey . '=' . $sValue . '&';
+            }
+            else {
+                foreach($sValue as $sSubValue)
+                    $sParams .= $sKey . '[]=' . $sSubValue . '&';
+            }
+        }
         $sParams = substr($sParams, 0, -1);
     } else {
         $sParams .= $mixedParams;
@@ -958,6 +1071,15 @@ function bx_ltrim_str ($sString, $sPrefix, $sReplace = '')
         return $sString;
     if (substr($sString, 0, strlen($sPrefix)) == $sPrefix)
         return $sReplace . substr($sString, strlen($sPrefix));
+    return $sString;
+}
+
+function bx_rtrim_str ($sString, $sPrefix, $sReplace = '')
+{
+    if ($sReplace && substr($sString, -strlen($sReplace)) == $sReplace)
+        return $sString;
+    if (substr($sString, -strlen($sPrefix)) == $sPrefix)
+        return substr($sString, 0, -strlen($sPrefix)) . $sReplace;
     return $sString;
 }
 
@@ -1068,12 +1190,12 @@ function bx_site_hash($sSalt = '', $isSkipVersion = false)
 
 /**
  * Transform string to method name string, for example it changes 'some_method' string to 'SomeMethod' string
- * @param string where words are separated with underscore
+ * @param array where words are separated with underscore
  * @return string where every word begins with capital letter
  */
-function bx_gen_method_name ($s, $sWordsDelimiter = '_')
+function bx_gen_method_name ($s, $aWordsDelimiter = array('_'))
 {
-    return str_replace(' ', '', ucwords(str_replace($sWordsDelimiter, ' ', $s)));
+    return str_replace(' ', '', ucwords(str_replace($aWordsDelimiter, ' ', $s)));
 }
 
 /**
@@ -1089,11 +1211,10 @@ function bx_trigger_error ($sMsg, $iNumLevelsBack = 0)
 }
 
 /**
- * Get Dolphin system DB version, for files version @see BX_DOL_VERSION, these versions must match
+ * Get system DB version, for files version @see BX_DOL_VERSION, these versions must match
  */
 function bx_get_ver ($bInvalidateCache = false)
 {
-    bx_import('BxDolDb');
     $oDb = BxDolDb::getInstance();
 
     if ($bInvalidateCache)
@@ -1105,7 +1226,7 @@ function bx_get_ver ($bInvalidateCache = false)
 
 /**
  * Check if site maintetance mode is enabled.
- * Maintetance mode is enabled when '.bx_maintenance' file exists in Dolphin root folder, 
+ * Maintetance mode is enabled when '.bx_maintenance' file exists in the script root folder, 
  * please note that this is hidden file and some file managers don't show it.
  * @param $bShowHttpError show 503 HTTP error if site is in mainenance mode
  * @return true if site is in maintenance mode, or false otherwise
@@ -1122,21 +1243,21 @@ function bx_check_maintenance_mode ($bShowHttpError = false)
 
 /**
  * Check for minimal requirements.
- * if DISABLE_DOLPHIN_REQUIREMENTS_CHECK is defined then this requirements checking is skipped.
+ * if BX_DISABLE_REQUIREMENTS_CHECK is defined then this requirements checking is skipped.
  * @param $bShowHttpError show 503 HTTP error if site doesn't meet minimal requirements
  * @return false if requirements are met, or array of errors of requirements aren't met
  */
 function bx_check_minimal_requirements ($bShowHttpError = false)
 {
-    if (defined('DISABLE_DOLPHIN_REQUIREMENTS_CHECK'))
+    if (defined('BX_DISABLE_REQUIREMENTS_CHECK'))
         return false;
 
     $aErrors = array();
 
     $aErrors[] = (ini_get('register_globals') == 0) ? '' : '<b>register_globals</b> is on (you need to disable it, or your site will be unsafe)';
     $aErrors[] = (ini_get('safe_mode') == 0) ? '' : '<b>safe_mode</b> is on (you need to disable it)';
-    $aErrors[] = (version_compare(PHP_VERSION, '5.2.0', '<')) ? 'PHP version is too old (please update to <b>PHP 5.2.0</b> at least)' : '';
-    $aErrors[] = (!extension_loaded( 'mbstring')) ? '<b>mbstring</b> extension not installed (Dolphin cannot work without it)' : '';
+    $aErrors[] = (version_compare(PHP_VERSION, '5.3.0', '<')) ? 'PHP version is too old (please update to <b>PHP 5.3.0</b> at least)' : '';
+    $aErrors[] = (!extension_loaded( 'mbstring')) ? '<b>mbstring</b> extension not installed (the script cannot work without it)' : '';
     $aErrors[] = (ini_get('allow_url_include') == 0) ? '' : '<b>allow_url_include</b> is on (you need to disable it, or your site will be unsafe)';
 
     $aErrors = array_diff($aErrors, array('')); // delete empty
@@ -1158,11 +1279,13 @@ function bx_check_minimal_requirements ($bShowHttpError = false)
 function bx_check_redirect_to_correct_hostname ($bProcessRedirect = false)
 {
     $aUrl = parse_url(BX_DOL_URL_ROOT);
+    $iPortDefault = 'https' == $aUrl['scheme'] ? '443' : '80';
 
-    $bRedirectRequired = isset($_SERVER['HTTP_HOST']) && 0 != strcasecmp($_SERVER['HTTP_HOST'], $aUrl['host']) && 0 != strcasecmp($_SERVER['HTTP_HOST'], $aUrl['host'] . ':80');
+    $bRedirectRequired = isset($_SERVER['HTTP_HOST']) && 0 != strcasecmp($_SERVER['HTTP_HOST'], $aUrl['host']) && 0 != strcasecmp($_SERVER['HTTP_HOST'], $aUrl['host'] . ':' . (!empty($aUrl['port']) ? $aUrl['port'] : $iPortDefault));
 
     if ($bRedirectRequired && $bProcessRedirect) {
-        header( "Location:http://{$aUrl['host']}{$_SERVER['REQUEST_URI']}" );
+        $sPort = empty($aUrl['port']) || 80 == $aUrl['port'] || 443 == $aUrl['port'] ? '' : ':' . $aUrl['port'];
+        header("Location:{$aUrl['scheme']}://{$aUrl['host']}{$sPort}{$_SERVER['REQUEST_URI']}", true, 301);
         exit;
     }
     
@@ -1195,6 +1318,156 @@ function bx_show_service_unavailable_error_and_exit ($sMsg = false, $iRetryAfter
     header('Retry-After: 600');
     echo $sMsg ? $sMsg : 'Service temporarily unavailable';
     exit;
+}
+
+/**
+ * The function is sumilar to php readfile, but it send all required headers and can send file by chunks and suports file seek
+ * @param $sPath path to file to output to the browser
+ * @param $sFilename filename without path, ig file is saved from browser, then this name is used, not used(empty) by default
+ * @param $sMimeType file mime type, by default 'application/octet-stream'
+ * @param $iCacheAge file cache age, by default 0
+ * @param $sCachePrivacy cache privacy 'public' (default value) or 'private'
+ * @return true on success or false on error
+ */
+function bx_smart_readfile($sPath, $sFilename = '', $sMimeType = 'application/octet-stream', $iCacheAge = 0, $sCachePrivacy = 'public')
+{
+    if (!file_exists($sPath))
+        return  false;
+
+    $fp = @fopen($sPath, 'rb');
+
+    $size   = filesize($sPath);
+    $length = $size;
+    $start  = 0;
+    $end    = $size - 1;
+
+    header('Content-type: ' . $sMimeType);
+    header('Cache-Control: ' . $sCachePrivacy . ', must-revalidate, max-age=' . $iCacheAge);
+    header("Accept-Ranges: 0-$length");
+    if ($sFilename)
+        header('Content-Disposition: inline; filename=' . $sFilename);
+
+    if (isset($_SERVER['HTTP_RANGE'])) {
+
+        $c_start = $start;
+        $c_end   = $end;
+
+        list(, $range) = explode('=', $_SERVER['HTTP_RANGE'], 2);
+        if (strpos($range, ',') !== false) {
+            header('HTTP/1.1 416 Requested Range Not Satisfiable');
+            header("Content-Range: bytes $start-$end/$size");
+            return false;
+        }
+        if ($range == '-') {
+            $c_start = $size - substr($range, 1);
+        }else{
+            $range  = explode('-', $range);
+            $c_start = $range[0];
+            $c_end   = (isset($range[1]) && is_numeric($range[1])) ? $range[1] : $size;
+        }
+        $c_end = ($c_end > $end) ? $end : $c_end;
+        if ($c_start > $c_end || $c_start > $size - 1 || $c_end >= $size) {
+            header('HTTP/1.1 416 Requested Range Not Satisfiable');
+            header("Content-Range: bytes $start-$end/$size");
+            return false;
+        }
+        $start  = $c_start;
+        $end    = $c_end;
+        $length = $end - $start + 1;
+        fseek($fp, $start);
+        header('HTTP/1.1 206 Partial Content');
+    }
+    header("Content-Range: bytes $start-$end/$size");
+    header("Content-Length: ".$length);
+
+
+    $buffer = 1024 * 8;
+    while(!feof($fp) && ($p = ftell($fp)) <= $end) {
+
+        if ($p + $buffer > $end) {
+            $buffer = $end - $p + 1;
+        }
+        set_time_limit(0);
+        echo fread($fp, $buffer);
+        flush();
+    }
+
+    fclose($fp);
+
+    return true;
+}
+
+/**
+ * Wrap in A tag links in TEXT string
+ * @param $sHtmlOrig - text string without tags
+ * @param $sAttrs - attributes string to add to the added A tag
+ * @return string where all links are wrapped in A tag
+ */
+function bx_linkify($text, $sAttrs = '', $bHtmlSpecialChars = false)
+{
+    if ($bHtmlSpecialChars)
+        $text = htmlspecialchars($text, ENT_NOQUOTES, 'UTF-8');
+
+    $re = "@\b((https?://)|(www\.))(([0-9a-zA-Z_!~*'().&=+$%-]+:)?[0-9a-zA-Z_!~*'().&=+$%-]+\@)?(([0-9]{1,3}\.){3}[0-9]{1,3}|([0-9a-zA-Z_!~*'()-]+\.)*([0-9a-zA-Z][0-9a-zA-Z-]{0,61})?[0-9a-zA-Z]\.[a-zA-Z]{2,6})(:[0-9]{1,4})?((/[0-9a-zA-Z_!~*'().;?:\@&=+$,%#-]+)*/?)@";
+    preg_match_all($re, $text, $matches, PREG_OFFSET_CAPTURE);
+
+    $matches = $matches[0];
+
+    if ($i = count($matches))
+        $bAddNofollow = getParam('sys_add_nofollow') == 'on';
+
+    while ($i--)
+    {
+        $url = $matches[$i][0];
+        if (!preg_match('@^https?://@', $url))
+            $url = 'http://'.$url;
+
+        if (strncmp(BX_DOL_URL_ROOT, $url, strlen(BX_DOL_URL_ROOT)) != 0) {
+            $sAttrs .= ' target="_blank" ';
+            if ($bAddNofollow)
+                $sAttrs .= ' rel="nofollow" ';
+        }
+
+        $text = substr_replace($text, '<a ' . $sAttrs . ' href="'.$url.'">'.$matches[$i][0].'</a>', $matches[$i][1], strlen($matches[$i][0]));
+    }
+
+    return $text;
+}
+
+/**
+ * Wrap in A tag links in HTML string, which aren't wrapped in A tag yet
+ * @param $sHtmlOrig - HTML string
+ * @param $sAttrs - attributes string to add to the added A tag
+ * @return modified HTML string, in case of errror original string is returned
+ */
+function bx_linkify_html($sHtmlOrig, $sAttrs = '') 
+{
+    if (!trim($sHtmlOrig))
+        return $sHtmlOrig;
+
+    $sId = 'bx-linkify-' . md5(microtime());
+    $dom = new DOMDocument();
+    @$dom->loadHTML('<?xml encoding="UTF-8"><div id="' . $sId . '">' . $sHtmlOrig . '</div>');
+    $xpath = new DOMXpath($dom);
+
+    foreach ($xpath->query('//text()') as $text) {
+        $frag = $dom->createDocumentFragment();
+        $frag->appendXML(bx_linkify($text->nodeValue, $sAttrs, true));
+        $text->parentNode->replaceChild($frag, $text);
+    }
+
+    if (version_compare(PHP_VERSION, '5.3.6') >= 0)
+        $s = $dom->saveHTML($dom->getElementById($sId));
+    else
+        $s = $dom->saveXML($dom->getElementById($sId), LIBXML_NOEMPTYTAG);
+
+    if (false === $s) // in case of error return original string
+        return $sHtmlOrig;
+
+    if (false !== ($iPos = mb_strpos($s, '<html><body>')) && $iPos < mb_strpos($s, $sId))
+        $s = mb_substr($s, $iPos + 12, -15); // strip <html><body> tags and everything before them
+
+    return mb_substr($s, 54, -6); // strip added tags
 }
 
 /** @} */

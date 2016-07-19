@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinInstall Dolphin Install
+ * @defgroup    TridentInstall Trident Install
  * @{
  */
 
@@ -65,22 +65,6 @@ class BxDolInstallSiteConfig
                 'def_exp' => array('defPath', ''),
                 'check' => array('checkLength', 1),
             ),
-            'convert_path' => array(
-                'name' => _t('_sys_inst_conf_field_path_to_binary', 'convert'),
-                'ex' => '/usr/local/bin/convert',
-                'desc' => _t('_sys_inst_conf_desc_path_to_binary', 'convert'),
-                'def' => '/usr/local/bin/convert',
-                'def_exp' => array('defImageMagickBin', 'convert'),
-                'check' => array('checkLength', 7),
-            ),
-            'composite_path' => array(
-                'name' => _t('_sys_inst_conf_field_path_to_binary', 'composite'),
-                'ex' => '/usr/local/bin/composite',
-                'desc' => _t('_sys_inst_conf_desc_path_to_binary', 'composite'),
-                'def' => '/usr/local/bin/composite',
-                'def_exp' => array('defImageMagickBin', 'composite'),
-                'check' => array('checkLength', 7),
-            ),
 
             'section_site_paths_close' => array(
                 'func' => 'rowSectionClose',
@@ -115,14 +99,14 @@ class BxDolInstallSiteConfig
             ),
             'db_name' => array(
                 'name' => _t('_sys_inst_conf_field_db_name'),
-                'ex' => 'mydomian_dolphin',
+                'ex' => 'mydomian_tri',
                 'desc' => _t('_sys_inst_conf_desc_db_name'),
                 'check' => array('checkLength', 1),
                 'db_conf' => 'name',
             ),
             'db_user' => array(
                 'name' => _t('_sys_inst_conf_field_db_user'),
-                'ex' => 'mydomian_dolphin',
+                'ex' => 'mydomian_tri',
                 'desc' => _t('_sys_inst_conf_desc_db_user'),
                 'check' => array('checkLength', 1),
                 'db_conf' => 'user',
@@ -222,9 +206,17 @@ class BxDolInstallSiteConfig
             BX_DOL_MODULE_TYPE_TEMPLATE => array(
                 'name' => _t('_sys_inst_conf_field_template'),
                 'desc' => _t('_sys_inst_conf_desc_template'),
-                'def' => 'uni',
+                'def' => 'protean',
                 'func' => 'rowSelect',
                 'vals' => $this->getSelectValues(BX_DOL_MODULE_TYPE_TEMPLATE),
+            ),
+
+            BX_DOL_MODULE_TYPE_MODULE => array(
+                'name' => _t('_sys_inst_conf_field_profiles'),
+                'desc' => _t('_sys_inst_conf_desc_profiles'),
+                'def' => 'persons',
+                'func' => 'rowSelect',
+                'vals' => $this->getSelectValues(BX_DOL_MODULE_TYPE_MODULE),
             ),
 
             'section_modules_close' => array(
@@ -257,7 +249,8 @@ class BxDolInstallSiteConfig
                     $sHost = $this->_sServerHttpHost;
                     $sUri = rtrim(dirname($this->_sServerPhpSelf), '/\\');
                     $sPage = 'index.php?action=finish';
-                    header("Location: http://{$sHost}{$sUri}/{$sPage}");
+                    $sProto = $this->proto();
+                    header("Location: {$sProto}{$sHost}{$sUri}/{$sPage}");
                     exit;
                 } else {
                     return true;
@@ -284,7 +277,7 @@ class BxDolInstallSiteConfig
                     <div class="bx-form-element-wrapper bx-def-margin-top">
                         <div class="bx-form-value">
                             <div class="bx-form-input-wrapper bx-form-input-wrapper-submit">
-                                <button class="bx-def-font-inputs bx-form-input-submit bx-btn bx-btn-primary" type="submit" name="site_config">
+                                <button class="bx-def-font-inputs bx-form-input-submit bx-btn bx-btn-primary" type="submit" name="site_config" value="1">
                                     {$sSubmitTitle}
                                 </button>
                             </div>
@@ -375,7 +368,7 @@ EOF;
 
     public function processModules ($a)
     {
-        $aTypes = array (BX_DOL_MODULE_TYPE_LANGUAGE, BX_DOL_MODULE_TYPE_TEMPLATE);
+        $aTypes = array (BX_DOL_MODULE_TYPE_LANGUAGE, BX_DOL_MODULE_TYPE_TEMPLATE, BX_DOL_MODULE_TYPE_MODULE);
         foreach ($aTypes as $sModuleType) {
             if (empty($a[$sModuleType]))
                 continue;
@@ -458,6 +451,7 @@ EOF;
         $aMarkers['version'] = BX_DOL_VER;
         $aMarkers['time'] = time();
         $aMarkers['secret'] = genRndPwd(11);
+        $aMarkers['ffmpeg_path'] = $aMarkers['root_dir'] . 'plugins/ffmpeg/ffmpeg.exe';
 
         return $aMarkers;
     }
@@ -587,7 +581,9 @@ EOF;
     {
         if (isset($aData[$sKey]))
             return bx_process_pass($aData[$sKey]);
-        if (!empty($a['def_exp'])) {
+        elseif (false !== getenv('TRIDENT_' . strtoupper($sKey)))
+            return bx_process_pass(getenv('TRIDENT_' . strtoupper($sKey)));
+        elseif (!empty($a['def_exp'])) {
             $s = $this->{$a['def_exp'][0]}($a['def_exp'][1]);
             if ($s) {
                 $sAutoMessage = _t('_sys_inst_conf_found') . '<br />';
@@ -601,7 +597,7 @@ EOF;
 
     protected function defUrl ($foo)
     {
-        $s = "http://" . $this->_sServerHttpHost . $this->_sServerPhpSelf;
+        $s = $this->proto() . $this->_sServerHttpHost . $this->_sServerPhpSelf;
         return preg_replace("/install\/(index\.php$)/", '', $s);
     }
 
@@ -609,22 +605,6 @@ EOF;
     {
         $s = rtrim($this->_sServerDocumentRoot, '/') . $this->_sServerPhpSelf;
         return preg_replace("/install\/(index\.php$)/", '', $s);
-    }
-
-    protected function defImageMagickBin ($sBin)
-    {
-        $a = array(
-            '/usr/X11R6/bin/',
-            '/usr/local/bin/',
-            '/usr/bin/',
-            '/usr/local/X11R6/bin/',
-            '/usr/bin/X11/',
-            '/opt/local/bin/',
-        );
-        foreach ($a as $sPath)
-            if (file_exists($sPath . $sBin))
-                return $sPath . $sBin;
-        return '';
     }
 
     protected function getSelectValues($sType)
@@ -635,6 +615,11 @@ EOF;
         foreach ($aModules as $sName => $aConfig)
             $a[$aConfig['home_uri']] = $aConfig['title'];
         return $a;
+    }
+
+    protected function proto()
+    {
+        return (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']) || getenv('TRIDENT_HTTPS') ? 'https://' : 'http://';
     }
 }
 

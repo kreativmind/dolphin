@@ -22,3 +22,6 @@ Thumbs.db
 build.properties
 tests/vendor
 tests/composer.phar
+samples/img/*
+modules/boonex/ether
+modules/vendor

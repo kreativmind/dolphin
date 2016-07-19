@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinUpgrade Dolphin Upgrade Script
+ * @defgroup    TridentUpgrade Trident Upgrade Script
  * @{
  */
 
@@ -84,8 +84,8 @@ class BxDolUpgradeUtil
             if (!$aModule)
                 return true; // it looks like module is not installed - skip it
             $aReplace = array (
-                'from' => array ('[db_prefix]'),
-                'to'   => array ($aModule['db_prefix']),
+                'from' => array ('{db_prefix}', '{db_name}'),
+                'to'   => array ($aModule['db_prefix'], defined('BX_DATABASE_NAME') ? BX_DATABASE_NAME : ''),
             );
         }
 

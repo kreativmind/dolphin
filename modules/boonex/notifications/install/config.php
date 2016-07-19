@@ -4,7 +4,7 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Notifications Notifications
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
@@ -17,12 +17,12 @@ $aConfig = array(
     'name' => 'bx_notifications',
     'title' => 'Notifications',
     'note' => 'Notifications module.',
-    'version' => '8.0.1.DEV',
+    'version' => '9.0.1.DEV',
     'vendor' => 'BoonEx',
 	'help_url' => 'http://feed.boonex.com/?section={module_name}',
 
     'compatible_with' => array(
-        '8.0.x'
+        '9.0.x'
     ),
 
     /**
@@ -54,14 +54,12 @@ $aConfig = array(
     ),
     'enable' => array(
         'execute_sql' => 1,
-        'recompile_permalinks' => 1,
-        'recompile_alerts' => 1,
+    	'update_relations_for_all' => 1,
         'clear_db_cache' => 1,
     ),
     'disable' => array (
         'execute_sql' => 1,
-        'recompile_permalinks' => 1,
-        'recompile_alerts' => 1,
+    	'update_relations_for_all' => 1,
         'clear_db_cache' => 1,
     ),
 
@@ -70,6 +68,15 @@ $aConfig = array(
      */
     'dependencies' => array(),
 
+    /**
+     * Relations Section
+     */
+    'relation_handlers' => array(
+    	'on_install' => '',
+    	'on_uninstall' => 'delete_module_events',
+	    'on_enable' => 'add_handlers',
+	    'on_disable' => 'delete_handlers',
+    ),
 );
 
 /** @} */

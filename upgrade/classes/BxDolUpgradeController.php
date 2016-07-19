@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinUpgrade Dolphin Upgrade Script
+ * @defgroup    TridentUpgrade Trident Upgrade Script
  * @{
  */
 
@@ -17,7 +17,7 @@ class BxDolUpgradeController
 
     public function __construct()
     {
-        $this->oDb = new BxDolUpgradeDb();
+        $this->oDb = BxDolUpgradeDb::getInstance();
         $this->oUtil = new BxDolUpgradeUtil($this->oDb);
     }
 

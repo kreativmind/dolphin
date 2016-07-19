@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Samples
+ * @defgroup    TridentCore Samples
  * @{
  */
 
@@ -49,9 +49,6 @@ $aPathInfo = pathinfo(__FILE__);
 require_once ($aPathInfo['dirname'] . '/../inc/header.inc.php');
 require_once(BX_DIRECTORY_PATH_INC . "design.inc.php");
 
-bx_import('BxDolLanguages');
-bx_import('BxDolTemplate');
-
 $oTemplate = BxDolTemplate::getInstance();
 $oTemplate->setPageNameIndex (BX_PAGE_DEFAULT);
 $oTemplate->setPageHeader ("Sample menu");
@@ -65,7 +62,6 @@ function PageCompMainCode()
 {
     ob_start();
 
-    bx_import('BxDolMenu');
     $oMenu = BxDolMenu::getObjectInstance('samples'); // it automatically creates instance of default or custom class by object name
     if ($oMenu)
         echo $oMenu->getCode(); // print menu object

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="Dolphin" basedir="." default="test">
+<project name="Trident" basedir="." default="test">
 
     <property file="${project.basedir}/build.properties" override="true" />
     <property name="build" value="0" override="yes" />
@@ -64,6 +64,30 @@
         <exclude name="upgrade/**" />
     </fileset>
 
+    <fileset dir="${project.basedir}" defaultexcludes="true" id="doc_files">
+        <include name="**/*" />
+        <exclude name="**/*.swp" />
+        <exclude name="inc/header*" />
+        <exclude name="build.xml" />
+        <exclude name="build.properties" />
+        <exclude name="storage/**/*" />
+        <exclude name="samples/**" />
+        <exclude name="scripts/**" />
+        <exclude name="tests/**" />
+        <exclude name="packages/**" />
+        <exclude name="upgrade/**" />
+
+        <exclude name="cache/**" />
+        <exclude name="cache_public/**" />
+        <exclude name="logs/**" />
+        <exclude name="tmp/**" />
+        <exclude name="plugins/**" />
+        <exclude name="plugins_public/**" />
+        <exclude name="modules/boonex/sites/**" />
+        <exclude name="modules/boonex/membership_pricing/**" />
+        <exclude name="**/updates/**" />
+    </fileset>
+
     <!-- ============================================  -->
     <!-- Target: prepare                               -->
     <!-- ============================================  -->
@@ -97,7 +121,7 @@
     <!-- ============================================  -->
     <target name="package" depends="clean">
         <tstamp />
-        <property name="package_name" value="Dolphin-${DSTAMP}-${build}" override="yes" />
+        <property name="package_name" value="Trident-${DSTAMP}-${build}" override="yes" />
         <property name="package_file" value="${package_name}.zip" />
         <echo msg="Packaging ${package_file} file..." />
 
@@ -124,7 +148,7 @@
         <tstamp />
         <propertyprompt propertyName="version_from" promptText="Enter version to upgrade from" />
         <propertyprompt propertyName="version_to" promptText="Enter version to upgrade to" />
-        <property name="package_name" value="Dolphin-Patch-v.${version_from}-to-v.${version_to}" override="yes" />
+        <property name="package_name" value="Trident-Patch-v.${version_from}-to-v.${version_to}" override="yes" />
         <property name="package_file" value="${package_name}.zip" />
         <echo msg="Packaging ${package_file} file..." />
 
@@ -217,11 +241,9 @@
             <fileset refid="files_dist" />
         </copy>
 
-        <chmod file="${deploy_path}/cache" mode="0777" />
-        <chmod file="${deploy_path}/cache_public" mode="0777" />
-        <chmod file="${deploy_path}/logs" mode="0777" />
-        <chmod file="${deploy_path}/tmp" mode="0777" />
-        <chmod file="${deploy_path}/storage" mode="0777" />
+        <phingcall target="change_permissions">
+            <property name="files_path" value="${deploy_path}" />
+        </phingcall>
 
         <phingcall target="install">
             <property name="install_base_dir" value="${deploy_path}" />
@@ -229,6 +251,39 @@
 
         <delete dir="${deploy_path}/install" failonerror="true" />
 
+    </target>
+
+    <!-- ============================================  -->
+    <!-- Target: copy files for doc generation         -->
+    <!-- ============================================  -->
+    <target name="copy_for_doc">
+        <property name="path" value="/tmp/doc_files" override="yes" />
+        <echo msg="Copying to '${path}' folder..." />
+
+        <delete failonerror="true">
+            <fileset dir="${path}">
+                <include name="**/*" />
+            </fileset>
+        </delete>
+
+        <copy todir="${path}">
+            <fileset refid="doc_files" />
+        </copy>
+    </target>
+
+    <!-- ============================================  -->
+    <!-- Target: change permissions                    -->
+    <!-- ============================================  -->
+    <target name="change_permissions">
+        <property name="files_path" value="${project.basedir}" override="yes" />
+        <echo msg="Change permissions in '${files_path}' folder..." />
+
+        <chmod file="${files_path}/cache" mode="0777" />
+        <chmod file="${files_path}/cache_public" mode="0777" />
+        <chmod file="${files_path}/logs" mode="0777" />
+        <chmod file="${files_path}/tmp" mode="0777" />
+        <chmod file="${files_path}/storage" mode="0777" />
+        <chmod file="${files_path}/plugins/ffmpeg/ffmpeg.exe" mode="0755" />
     </target>
 
     <!-- ============================================  -->

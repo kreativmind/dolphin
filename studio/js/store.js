@@ -2,7 +2,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinStudio Dolphin Studio
+ * @defgroup    TridentStudio Trident Studio
  * @{
  */
 function BxDolStudioStore(oOptions) {
@@ -13,11 +13,9 @@ function BxDolStudioStore(oOptions) {
 
     this.sIdPageContent = 'bx-std-pc-content';
     this.sIdPopupProduct = 'bx-std-str-popup-product';
-    this.sIdPopupFiles = 'bx-std-str-popup-files';
-    this.sIdPopupFile = 'bx-std-str-popup-file';
 }
 
-BxDolStudioStore.prototype.addToCart = function(sVendor, iProduct, oButton) {
+BxDolStudioStore.prototype.addToCart = function(iVendor, iProduct, oButton) {
 	var oDate = new Date();
 	var $this = this;
 	bx_loading(this.sIdPageContent, true);
@@ -26,14 +24,14 @@ BxDolStudioStore.prototype.addToCart = function(sVendor, iProduct, oButton) {
 		this.sActionsUrl,
 		{
 			str_action: 'add-to-cart',
-			str_vendor: sVendor,
+			str_vendor: iVendor,
 			str_item: iProduct,
 			_t:oDate.getTime()
 		},
 		function(oData) {
 			bx_loading($this.sIdPageContent, false);
 
-			$this.showPopup($this.sIdPopupFile, oData.message, oButton);
+			$this.showNotification(oData.message);
 
 			if(parseInt(oData.code) == 0) {
 				var oCounter = $('#bx-std-pmi-checkout .bx-std-pmen-item-counter span');
@@ -41,13 +39,15 @@ BxDolStudioStore.prototype.addToCart = function(sVendor, iProduct, oButton) {
 
 				if(parseInt(oCounter.html()) > 0)
 					oCounter.parent('.bx-std-pmen-item-counter').show();
+
+				$(oButton).hide().next('.bx-std-pc-checkout').show();
 			}
 		},
 		'json'
 	);
 };
 
-BxDolStudioStore.prototype.deleteFromCart = function(sVendor, iProduct, oButton) {
+BxDolStudioStore.prototype.deleteFromCart = function(iVendor, iProduct, oButton) {
 	var oDate = new Date();
 	var $this = this;
 	bx_loading(this.sIdPageContent, true);
@@ -56,7 +56,7 @@ BxDolStudioStore.prototype.deleteFromCart = function(sVendor, iProduct, oButton)
 		this.sActionsUrl,
 		{
 			str_action: 'delete-from-cart',
-			str_vendor: sVendor,
+			str_vendor: iVendor,
 			str_item: iProduct,
 			_t:oDate.getTime()
 		},
@@ -64,7 +64,7 @@ BxDolStudioStore.prototype.deleteFromCart = function(sVendor, iProduct, oButton)
 			bx_loading($this.sIdPageContent, false);
 
 			if(oData.message.length > 0)
-				$this.showPopup($this.sIdPopupFile, oData.message, iProduct != 0 ? oButton : null);
+				$this.showNotification(oData.message);
 
 			var iCode = parseInt(oData.code);
 			var oCounter = $('#bx-std-pmi-checkout .bx-std-pmen-item-counter span');
@@ -97,11 +97,11 @@ BxDolStudioStore.prototype.deleteFromCart = function(sVendor, iProduct, oButton)
 	);
 };
 
-BxDolStudioStore.prototype.deleteAllFromCart = function(sVendor, oButton) {
-	this.deleteFromCart(sVendor, 0, oButton);
+BxDolStudioStore.prototype.deleteAllFromCart = function(iVendor, oButton) {
+	this.deleteFromCart(iVendor, 0, oButton);
 };
 
-BxDolStudioStore.prototype.checkoutCart = function(sVendor, oButton) {
+BxDolStudioStore.prototype.checkoutCart = function(iVendor, oButton) {
 	var oDate = new Date();
 	var $this = this;
 	bx_loading(this.sIdPageContent, true);
@@ -110,14 +110,14 @@ BxDolStudioStore.prototype.checkoutCart = function(sVendor, oButton) {
 		this.sActionsUrl,
 		{
 			str_action: 'checkout-cart',
-			str_vendor: sVendor,
+			str_vendor: iVendor,
 			_t:oDate.getTime()
 		},
 		function(oData) {
 			bx_loading($this.sIdPageContent, false);
 
 			if(oData.message.length > 0)
-				$this.showPopup($this.sIdPopupFile, oData.message, oButton);
+				$this.showNotification(oData.message);
 
 			if(parseInt(oData.code) == 0 && oData.redirect.length > 0)
 				document.location=oData.redirect;
@@ -127,17 +127,36 @@ BxDolStudioStore.prototype.checkoutCart = function(sVendor, oButton) {
 };
 
 BxDolStudioStore.prototype.getFile = function(iFileId, oButton) {
-	this._getFile('get-file', iFileId, oButton);
+	this._getFile('get-file', iFileId, '', oButton);
 };
 
 BxDolStudioStore.prototype.getUpdate = function(sModuleName, oButton) {
-	this._getFile('get-update', sModuleName, oButton);
+	this._getFile('get-update', sModuleName, '', oButton);
 };
 
-BxDolStudioStore.prototype._getFile = function(sAction, mixedId, oButton) {
+BxDolStudioStore.prototype.getUpdateAndInstall = function(sModuleName, oButton) {
+	var $this = this;
+
+	var onResult = function(oData, oButton) {
+		if(oData.code != 0) {
+			$this._onGetFile(oData, oButton);
+			return;
+		}
+
+		bx_loading($this.sIdPageContent, false);
+
+		$(oButton).parents('.bx-std-product:first').hide();
+	};
+
+	this._getFile('get-update-and-install', sModuleName, onResult, oButton);
+};
+
+BxDolStudioStore.prototype._getFile = function(sAction, mixedId, onResult, oButton) {
 	var oDate = new Date();
 	var $this = this;
-	bx_loading(this.sIdPageContent, true);
+
+	bx_loading_btn(oButton, true);
+	$(oButton).addClass('bx-btn-disabled');
 
 	$.get(
 		this.sActionsUrl,
@@ -147,35 +166,29 @@ BxDolStudioStore.prototype._getFile = function(sAction, mixedId, oButton) {
 			_t:oDate.getTime()
 		},
 		function(oData) {
-			bx_loading($this.sIdPageContent, false);
-			$this.showPopup($this.sIdPopupFile, oData.message, oButton);
+			if(typeof onResult == 'function')
+				onResult(oData, oButton);
+			else
+				$this._onGetFile(oData, oButton);
 		},
 		'json'
 	);
 };
 
-/*
- * NOTE. Is needed for download popup selector. Isn't used for now.
- */
-BxDolStudioStore.prototype.getFiles = function(iId, sType, oButton) {
-	var oDate = new Date();
-	var $this = this;
-	bx_loading(this.sIdPageContent, true);
+BxDolStudioStore.prototype._onGetFile = function(oData, oButton) {
+	bx_loading_btn(oButton, false);
 
-	$.get(
-		this.sActionsUrl,
-		{
-			str_action: 'get-files',
-			str_id: iId,
-			str_type: sType,
-			_t:oDate.getTime()
-		},
-		function(oData) {
-			bx_loading($this.sIdPageContent, false);
-			$this.showPopup($this.sIdPopupFiles, oData.message, oButton);
-		},
-		'json'
-	);
+	switch(parseInt(oData.code)) {
+		case 1:
+			$(oButton).removeClass('bx-btn-disabled');
+			break;
+		case 2:
+			$(oButton).val(_t('_adm_btn_queued_submit'));
+			break;
+	}
+
+	if(oData.message)
+		this.showNotification(oData.message);
 };
 
 BxDolStudioStore.prototype.info = function(sModuleName, oLink) {
@@ -196,7 +209,7 @@ BxDolStudioStore.prototype.info = function(sModuleName, oLink) {
 			var sId = $this.sIdPopupProduct;
 			if(oData.code == 0 && oData.popup.length > 0) {
 		        $('#' + sId).remove();
-				$(oData.popup).appendTo('body');
+				$(oData.popup).appendTo('body').bxTime();
 				$('#' + sId).dolPopup({
 					onShow: function() {
 						$this.initScreenshots(oData.screenshots);
@@ -204,7 +217,7 @@ BxDolStudioStore.prototype.info = function(sModuleName, oLink) {
 				});
 			}
 			else
-				$this.showPopup(sId, oData.message, oLink);
+				$this.showNotification(oData.message);
 		},
 		'json'
 	);
@@ -253,40 +266,49 @@ BxDolStudioStore.prototype.initScreenshots = function(iCount) {
 
 BxDolStudioStore.prototype.install = function(sValue, oInput) {
 	var $this = this;
-	var onSuccess = function() {
-		$(oInput).parent('.bx-std-pc-buttons').hide(0, function() {
-			$(this).siblings(':hidden').show(0);
+	var onSuccess = function(oData) {
+		$(oInput).parent('.bx-std-pc-buttons:first').hide(0, function() {
+			$(this).siblings('.bx-std-pcb-installed:hidden').show(0);
 		});
 	};
 
-	return this.perform('install', sValue, onSuccess);
+	return this.perform('install', sValue, onSuccess, oInput);
 };
 
 BxDolStudioStore.prototype.update = function(sValue, oInput) {
 	var $this = this;
-	var onSuccess = function() {
+	var onSuccess = function(oData) {
 		$(oInput).parents('.bx-std-product:first').hide();
 	};
 
-	return this.perform('update', sValue, onSuccess);
+	return this.perform('update', sValue, onSuccess, oInput);
 };
 
 BxDolStudioStore.prototype.remove = function(sValue, oInput) {
-	var onSuccess = function() {
-		$(oInput).parents('.bx-std-product:first').hide();
+	var onSuccess = function(oData) {
+		switch(parseInt(oData.code)) {
+			case 0:
+				$(oInput).parents('.bx-std-product:first').hide();
+				break;
+			case 2:
+				$(oInput).parent('.bx-std-pc-buttons:first').hide(0, function() {
+					$(this).siblings('.bx-std-pcb-queued:hidden').show(0);
+				});
+				break;
+		}
 	};
 
-    return this.perform('delete', sValue, onSuccess);
+    return this.perform('delete', sValue, onSuccess, oInput);
 };
 
-BxDolStudioStore.prototype.perform = function(sType, sValue, onSuccess) {
+BxDolStudioStore.prototype.perform = function(sType, sValue, onSuccess, oInput) {
 	var oDate = new Date();
 	var $this = this;
 
 	if(!sValue)
         return false;
 
-	bx_loading(this.sIdPageContent, true);
+	bx_loading_btn(oInput, true);
 
     $.post(
     	this.sActionsUrl,
@@ -296,13 +318,18 @@ BxDolStudioStore.prototype.perform = function(sType, sValue, onSuccess) {
     		_t:oDate.getTime()
     	},
     	function (oData) {
-    		bx_loading($this.sIdPageContent, false);
+    		bx_loading_btn(oInput, false);
 
     		if(oData.message.length > 0)
-    			$this.showPopup('bx-std-str-popup-' + sType, oData.message);
+    			$this.showNotification(oData.message);
 
-    		if(oData.code == 0 && typeof onSuccess == 'function')
-    			onSuccess();
+    		switch(parseInt(oData.code)) {
+	    		case 0:
+	    		case 2:
+	    			if(typeof onSuccess == 'function')
+	    				onSuccess(oData);
+	    			break;
+    		}
     	},
     	'json'
     );
@@ -324,7 +351,7 @@ BxDolStudioStore.prototype.changePage = function(sType) {
 		},
 		function(oData) {
 			if(oData.code != 0) {
-				$this.showPopup('bx-std-str-popup-browsing', oData.message);
+				$this.showNotification(oData.message);
 				return;
 			}
 
@@ -356,7 +383,7 @@ BxDolStudioStore.prototype.changePagePaginate = function(oButton, sType, iStart,
 		},
 		function(oData) {
 			if(oData.code != 0) {
-				$this.showPopup('bx-std-str-popup-browsing', oData.message);
+				$this.showNotification(oData.message);
 				return;
 			}
 
@@ -370,6 +397,15 @@ BxDolStudioStore.prototype.changePagePaginate = function(oButton, sType, iStart,
 	return true;
 };
 
+BxDolStudioStore.prototype.showNotification = function(sContent) {
+	$(sContent).appendTo('body').dolPopupInline({
+		removeOnClose: true
+	});   
+};
+
+/**
+ * It isn't used anywhere for now.
+ */
 BxDolStudioStore.prototype.showPopup = function(sId, sContent, mixedPointer) {
     $('#' + sId).remove();
     $('<div id="' + sId + '" style="display: none;"></div>').appendTo('body').html(sContent);

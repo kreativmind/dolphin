@@ -4,7 +4,7 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    SMTPMailer SMTP Mailer
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
@@ -17,12 +17,12 @@ $aConfig = array(
     'name' => 'bx_smtp',
     'title' => 'SMTP Mailer',
     'note' => 'Use remote SMTP server for sending mails.',
-    'version' => '8.0.1.DEV',
+    'version' => '9.0.1.DEV',
     'vendor' => 'BoonEx',
 	'help_url' => 'http://feed.boonex.com/?section={module_name}',
 
     'compatible_with' => array(
-        '8.0.x'
+        '9.0.x'
     ),
 
     /**
@@ -52,12 +52,10 @@ $aConfig = array(
     ),
     'enable' => array(
         'execute_sql' => 1,
-        'recompile_global_paramaters' => 1,
         'clear_db_cache' => 1,
     ),
     'disable' => array(
         'execute_sql' => 1,
-        'recompile_global_paramaters' => 1,
         'clear_db_cache' => 1,
     ),
 

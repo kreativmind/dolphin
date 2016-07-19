@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinInstall Dolphin Install
+ * @defgroup    TridentInstall Trident Install
  * @{
  */
 
@@ -93,18 +93,19 @@ class BxDolInstallView
 
     protected function _getInlineCSS()
     {
-        $s = '';
-        require_once($this->_sDirPlugins . 'lessphp/lessc.inc.php');
-        $oLess = new lessc();
+        require_once($this->_sDirPlugins . 'lessphp/Less.php');
+        $oLessParser = new Less_Parser();
+
         $oConfigBase = new BxBaseConfig();
-        $oLess->setVariables($oConfigBase->aLessConfig);
+        $oLessParser->ModifyVars($oConfigBase->aLessConfig);
+
         foreach ($this->_aFilesCss as $sFile) {
             if (substr($sFile, -5) !== '.less')
                 continue;
 
-            $s .= $oLess->compileFile($this->_sPathCss . $sFile) . "\n";
+            $oLessParser->parseFile($this->_sPathCss . $sFile, $this->_sUrlCss);
         }
-        return $s;
+        return $oLessParser->getCss();
     }
 }
 

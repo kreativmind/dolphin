@@ -4,12 +4,10 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Sites Sites
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
-
-bx_import('BxTemplMenu');
 
 class BxSitesMenuViewSite extends BxTemplMenu
 {
@@ -20,7 +18,6 @@ class BxSitesMenuViewSite extends BxTemplMenu
     {
         parent::__construct($aObject, $oTemplate);
 
-        bx_import('BxDolModule');
         $this->_oModule = BxDolModule::getInstance('bx_sites');
 
         $this->_aContentInfo = array();

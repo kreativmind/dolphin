@@ -4,7 +4,7 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Russian Russian language
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
@@ -17,12 +17,12 @@ $aConfig = array(
     'name' => 'bx_ru',
     'title' => 'Russian',
     'note' => 'Language file',
-    'version' => '8.0.2.DEV',
+    'version' => '9.0.1.DEV',
     'vendor' => 'Boonex',
 	'help_url' => 'http://feed.boonex.com/?section={module_name}',
 
     'compatible_with' => array(
-        '8.0.x'
+        '9.0.x'
     ),
 
     /**
@@ -47,12 +47,12 @@ $aConfig = array(
         'execute_sql' => 1,
         'update_languages' => 1,
         'install_language' => 1,
-        'recompile_global_paramaters' => 1
+        'clear_db_cache' => 1
     ),
     'uninstall' => array (
         'update_languages' => 1,
         'execute_sql' => 1,
-        'recompile_global_paramaters' => 1
+        'clear_db_cache' => 1
     ),
     'enable' => array(
         'execute_sql' => 1

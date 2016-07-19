@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Dolphin Core
+ * @defgroup    TridentUpgrade Trident Upgrade Script
  * @{
  */
 
@@ -66,6 +66,11 @@ class BxDolUpgradeCron extends BxDolCron
 
             // disable auto-upgrade if it is failed
             setParam('sys_autoupdate_system', '');
+        } 
+        elseif ('on' == getParam('sys_autoupdate_modules')) { // run modules update after successful system upgrade
+
+            bx_import('BxDolCronQuery');
+            BxDolCronQuery::getInstance()->addTransientJobClass('sys_perform_upgrade_modules', 'BxDolCronUpgradeModulesCheck', 'inc/classes/BxDolCronUpgradeModulesCheck.php');
         }
     }
 }

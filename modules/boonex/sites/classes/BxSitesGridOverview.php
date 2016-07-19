@@ -4,16 +4,12 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Sites Sites
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
 
 require_once(BX_DIRECTORY_PATH_INC . 'design.inc.php');
-
-bx_import('BxTemplGrid');
-bx_import('BxDolForm');
-bx_import('BxDolPermalinks');
 
 class BxSitesGridOverview extends BxTemplGrid
 {
@@ -24,7 +20,6 @@ class BxSitesGridOverview extends BxTemplGrid
     {
         parent::__construct ($aOptions, $oTemplate);
 
-        bx_import('BxDolModule');
         $this->_oModule = BxDolModule::getInstance('bx_sites');
     }
 
@@ -40,7 +35,7 @@ class BxSitesGridOverview extends BxTemplGrid
 
         $oForm = BxDolForm::getObjectInstance('bx_sites', 'bx_sites_site_confirm');
         if(!$oForm) {
-            $this->_echoResultJson(array('msg' => _t('_sys_txt_error_occured')), true);
+            echoJson(array('msg' => _t('_sys_txt_error_occured')));
             return;
         }
 
@@ -64,7 +59,7 @@ class BxSitesGridOverview extends BxTemplGrid
 
         $oForm = BxDolForm::getObjectInstance('bx_sites', 'bx_sites_site_pending');
         if(!$oForm) {
-            $this->_echoResultJson(array('msg' => _t('_sys_txt_error_occured')), true);
+            echoJson(array('msg' => _t('_sys_txt_error_occured')));
             return;
         }
 
@@ -78,10 +73,9 @@ class BxSitesGridOverview extends BxTemplGrid
     {
         $sAction = 'active';
 
-        bx_import('BxDolForm');
         $oForm = BxDolForm::getObjectInstance('bx_sites', 'bx_sites_site_cancel');
         if(!$oForm) {
-            $this->_echoResultJson(array('msg' => _t('_sys_txt_error_occured')), true);
+            echoJson(array('msg' => _t('_sys_txt_error_occured')));
             return;
         }
 
@@ -95,25 +89,23 @@ class BxSitesGridOverview extends BxTemplGrid
 
         $bResult = $this->_oModule->cancelSubscription($aAccount['pd_profile_id']);
         if(!$bResult) {
-            $this->_echoResultJson(array('msg' => _t('_bx_sites_txt_err_cannot_perform')), true);
+            echoJson(array('msg' => _t('_bx_sites_txt_err_cannot_perform')));
             return;
         }
 
-        bx_import('BxDolPermalinks');
         $oPermalinks = BxDolPermalinks::getInstance();
 
         $sUrl = BX_DOL_URL_ROOT . $oPermalinks->permalink('page.php?i=site-view&id=' . $aAccount['id']);
-        $this->_echoResultJson(array('eval' => 'window.open(\'' . $sUrl . '\',\'_self\');'), true);
+        echoJson(array('eval' => 'window.open(\'' . $sUrl . '\',\'_self\');'));
     }
 
     public function performActionCanceled()
     {
         $sAction = 'canceled';
 
-        bx_import('BxDolForm');
         $oForm = BxDolForm::getObjectInstance('bx_sites', 'bx_sites_site_reactivate');
         if(!$oForm) {
-            $this->_echoResultJson(array('msg' => _t('_sys_txt_error_occured')), true);
+            echoJson(array('msg' => _t('_sys_txt_error_occured')));
             return;
         }
 
@@ -131,7 +123,7 @@ class BxSitesGridOverview extends BxTemplGrid
 
         $oForm = BxDolForm::getObjectInstance('bx_sites', 'bx_sites_site_suspended');
         if(!$oForm) {
-            $this->_echoResultJson(array('msg' => _t('_sys_txt_error_occured')), true);
+            echoJson(array('msg' => _t('_sys_txt_error_occured')));
             return;
         }
 
@@ -155,7 +147,6 @@ class BxSitesGridOverview extends BxTemplGrid
         $this->_oTemplate->addJs(array('jquery.form.min.js'));
         $this->_oTemplate->addJsTranslation(array('_bx_sites_form_site_input_do_cancel_confirm'));
 
-        bx_import('BxTemplFormView');
         $oForm = new BxTemplFormView(array());
         $oForm->addCssJs();
     }
@@ -269,7 +260,6 @@ class BxSitesGridOverview extends BxTemplGrid
 
         $oForm->initChecker();
         if(!$oForm->isSubmittedAndValid()) {
-            bx_import('BxTemplFunctions');
             $sContent = BxTemplFunctions::getInstance()->popupBox('bx-sites-site-' . $sAction . '-popup', _t('_bx_sites_grid_overview_popup_' . $sAction), $this->_oModule->_oTemplate->parseHtmlByName('block_' . $sAction . '.html', array(
                 'form_id' => $oForm->aFormAttrs['id'],
                 'form' => $oForm->getCode(true),
@@ -277,7 +267,7 @@ class BxSitesGridOverview extends BxTemplGrid
                 'action' => $sAction
             )));
 
-            $this->_echoResultJson(array('popup' => array('html' => $sContent, 'options' => array('closeOnOuterClick' => false))), true);
+            echoJson(array('popup' => array('html' => $sContent, 'options' => array('closeOnOuterClick' => false))));
             return;
         }
 
@@ -287,7 +277,7 @@ class BxSitesGridOverview extends BxTemplGrid
         $iAccount = $oForm->getCleanValue('id');
         $aAccount = $this->_oModule->_oDb->getAccount(array('type' => 'id', 'value' => $iAccount));
         if(empty($aAccount) || !is_array($aAccount)) {
-            $this->_echoResultJson(array('msg' => _t('_bx_sites_txt_err_site_is_not_defined')), true);
+            echoJson(array('msg' => _t('_bx_sites_txt_err_site_is_not_defined')));
             return;
         }
 
@@ -298,11 +288,11 @@ class BxSitesGridOverview extends BxTemplGrid
     {
         $sUrl = $this->_oModule->startSubscription($aAccount['id']);
         if(empty($sUrl)) {
-            $this->_echoResultJson(array('msg' => _t('_bx_sites_txt_err_cannot_perform')), true);
+            echoJson(array('msg' => _t('_bx_sites_txt_err_cannot_perform')));
             return;
         }
 
-        $this->_echoResultJson(array('eval' => 'window.open(\'' . $sUrl . '\', \'_self\');', 'popup_not_hide' => 1), true);
+        echoJson(array('eval' => 'window.open(\'' . $sUrl . '\', \'_self\');', 'popup_not_hide' => 1));
     }
 }
 /** @} */

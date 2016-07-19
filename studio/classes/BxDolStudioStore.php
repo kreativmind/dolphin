@@ -3,12 +3,10 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinStudio Dolphin Studio
+ * @defgroup    TridentStudio Trident Studio
  * @{
  */
 
-bx_import('BxTemplStudioPage');
-bx_import('BxDolStudioStoreQuery');
 bx_import('BxDolStudioInstallerUtils');
 
 define('BX_DOL_STUDIO_STR_TYPE_DEFAULT', 'downloaded');
@@ -19,8 +17,9 @@ class BxDolStudioStore extends BxTemplStudioPage
     protected $aContent;
 
     protected $iClient;
+    protected $sClientKey; 
 
-    protected $aAlias;
+    protected $sStoreDataUrlPublic;
     protected $bAuthAccessUpdates;
 
     function __construct($sPage = "")
@@ -29,37 +28,23 @@ class BxDolStudioStore extends BxTemplStudioPage
 
         $this->oDb = new BxDolStudioStoreQuery();
 
-        $this->aAlias = array(
-            'tag' => array(
-                'modules' => 'extensions',
-                'languages' => 'translations'
-            ),
-            'category' => array()
-        );
+        $this->sStoreDataUrlPublic = BxDolStudioInstallerUtils::getInstance()->getStoreDataUrl();
         $this->bAuthAccessUpdates = false;
 
         $this->sPage = BX_DOL_STUDIO_STR_TYPE_DEFAULT;
         if(is_string($sPage) && !empty($sPage))
             $this->sPage = $sPage;
 
-		bx_import('BxDolStudioOAuth');
         $this->iClient = BxDolStudioOAuth::getAuthorizedClient();
+        if(!empty($this->iClient))
+        	$this->sClientKey = $this->oDb->getParam('sys_oauth_key');
 
         //--- Check actions ---//
         if(($sAction = bx_get('str_action')) !== false) {
             $sAction = bx_process_input($sAction);
 
-            $aResult = array('code' => 1, 'message' => _t('_adm_mod_err_cannot_process_action'));
+            $aResult = array('code' => BX_DOL_STUDIO_IU_RC_FAILED, 'message' => _t('_adm_mod_err_cannot_process_action'));
             switch($sAction) {
-                /*
-                 * NOTE. Is needed for download popup selector. Isn't used for now.
-                 */
-                case 'get-files':
-                    $iId = (int)bx_get('str_id');
-                    $sType = bx_process_input(bx_get('str_type'));
-                    $aResult = $this->getFiles($iId, $sType);
-                    break;
-
                 case 'get-file':
                     $iFileId = (int)bx_get('str_id');
                     $aResult = $this->getFile($iFileId);
@@ -75,14 +60,19 @@ class BxDolStudioStore extends BxTemplStudioPage
                     $aResult = $this->getUpdate($sModuleName);
                     break;
 
+				case 'get-update-and-install':
+                    $sModuleName = bx_process_input(bx_get('str_id'));
+                    $aResult = $this->getUpdate($sModuleName, true);
+                    break;
+
                 case 'get-products-by-type':
                     $this->sPage = bx_process_input(bx_get('str_value'));
 
                     $sContent = $this->getPageCode();
                     if(!empty($sContent))
-                        $aResult = array('code' => 0, 'content' => $sContent);
+                        $aResult = array('code' => BX_DOL_STUDIO_IU_RC_SUCCESS, 'content' => $sContent);
                     else
-                        $aResult = array('code' => 1, 'message' => _t('_adm_act_err_failed_page_loading'));
+                        $aResult = array('code' => BX_DOL_STUDIO_IU_RC_FAILED, 'message' => _t('_adm_act_err_failed_page_loading'));
                     break;
 
                 case 'get-products-by-page':
@@ -90,49 +80,47 @@ class BxDolStudioStore extends BxTemplStudioPage
 
                     $sContent = $this->getPageContent();
                     if(!empty($sContent))
-                        $aResult = array('code' => 0, 'content' => $sContent);
+                        $aResult = array('code' => BX_DOL_STUDIO_IU_RC_SUCCESS, 'content' => $sContent);
                     else
-                        $aResult = array('code' => 1, 'message' => _t('_adm_act_err_failed_page_loading'));
+                        $aResult = array('code' => BX_DOL_STUDIO_IU_RC_FAILED, 'message' => _t('_adm_act_err_failed_page_loading'));
                     break;
 
                 case 'add-to-cart':
-                    $sVendor = bx_process_input(bx_get('str_vendor'));
+                    $iVendor = (int)bx_get('str_vendor');
                     $iItem = (int)bx_get('str_item');
                     $iItemCount = 1;
 
-                    if(empty($sVendor) || empty($iItem)) {
-                        $aResult = array('code' => 1, 'message' => _t('_adm_err_modules_cannot_add_to_cart'));
+                    if(empty($iVendor) || empty($iItem)) {
+                        $aResult = array('code' => BX_DOL_STUDIO_IU_RC_FAILED, 'message' => _t('_adm_err_modules_cannot_add_to_cart'));
                         break;
                     }
 
-                    bx_import('BxDolStudioCart');
-                    BxDolStudioCart::getInstance()->add($sVendor, $iItem, $iItemCount);
-                    $aResult = array('code' => 0, 'message' => _t('_adm_msg_modules_success_added_to_cart'));
+                    BxDolStudioCart::getInstance()->add($iVendor, $iItem, $iItemCount);
+                    $aResult = array('code' => BX_DOL_STUDIO_IU_RC_SUCCESS, 'message' => _t('_adm_msg_modules_success_added_to_cart'));
                     break;
 
                 case 'delete-from-cart':
-                    $sVendor = bx_process_input(bx_get('str_vendor'));
+                    $iVendor = (int)bx_get('str_vendor');
                     $iItem = (int)bx_get('str_item');
 
-                    if(empty($sVendor)) {
-                        $aResult = array('code' => 1, 'message' => _t('_adm_err_modules_cannot_delete_from_cart'));
+                    if(empty($iVendor)) {
+                        $aResult = array('code' => BX_DOL_STUDIO_IU_RC_FAILED, 'message' => _t('_adm_err_modules_cannot_delete_from_cart'));
                         break;
                     }
 
-                    bx_import('BxDolStudioCart');
-                    BxDolStudioCart::getInstance()->delete($sVendor, $iItem);
-                    $aResult = array('code' => 0, 'message' => '');
+                    BxDolStudioCart::getInstance()->delete($iVendor, $iItem);
+                    $aResult = array('code' => BX_DOL_STUDIO_IU_RC_SUCCESS, 'message' => '');
                     break;
 
                 case 'checkout-cart':
-                    $sVendor = bx_process_input(bx_get('str_vendor'));
-                    if(empty($sVendor)) {
-                        $aResult = array('code' => 1, 'message' => _t('_adm_err_modules_cannot_checkout_empty_vendor'));
+                    $iVendor = (int)bx_get('str_vendor');
+                    if(empty($iVendor)) {
+                        $aResult = array('code' => BX_DOL_STUDIO_IU_RC_FAILED, 'message' => _t('_adm_err_modules_cannot_checkout_empty_vendor'));
                         break;
                     }
 
-                    $sLocation = $this->checkoutCart($sVendor);
-                    $aResult = array('code' => 0, 'message' => '', 'redirect' => $sLocation);
+                    $sLocation = $this->checkoutCart($iVendor);
+                    $aResult = array('code' => BX_DOL_STUDIO_IU_RC_SUCCESS, 'message' => '', 'redirect' => $sLocation);
                     break;
 
                 case 'install':
@@ -140,8 +128,7 @@ class BxDolStudioStore extends BxTemplStudioPage
                     if(empty($sValue))
                         break;
 
-                    bx_import('BxDolStudioInstallerUtils');
-                    $aResult = BxDolStudioInstallerUtils::getInstance()->perform($sValue, 'install', array('auto_enable' => true));
+                    $aResult = BxDolStudioInstallerUtils::getInstance()->perform($sValue, 'install', array('auto_enable' => true, 'html_response' => true));
                     break;
 
                 case 'update':
@@ -149,8 +136,7 @@ class BxDolStudioStore extends BxTemplStudioPage
                     if(empty($sValue))
                         break;
 
-                    bx_import('BxDolStudioInstallerUtils');
-                    $aResult = BxDolStudioInstallerUtils::getInstance()->perform($sValue, 'update');
+                    $aResult = BxDolStudioInstallerUtils::getInstance()->perform($sValue, 'update', array('html_response' => true));
                     break;
 
                 case 'delete':
@@ -158,18 +144,12 @@ class BxDolStudioStore extends BxTemplStudioPage
                     if(empty($sValue))
                         break;
 
-                    bx_import('BxDolStudioInstallerUtils');
-                    $aResult = BxDolStudioInstallerUtils::getInstance()->perform($sValue, 'delete');
+                    $aResult = BxDolStudioInstallerUtils::getInstance()->perform($sValue, 'delete', array('html_response' => true));
                     break;
             }
 
-            if(!empty($aResult['message'])) {
-                bx_import('BxDolStudioTemplate');
-                $aResult['message'] = BxDolStudioTemplate::getInstance()->parseHtmlByName('mod_action_result.html', array('content' => $aResult['message']));
-
-                bx_import('BxTemplStudioFunctions');
-                $aResult['message'] = BxTemplStudioFunctions::getInstance()->transBox('', $aResult['message']);
-            }
+            if(!empty($aResult['message']))
+				$aResult['message'] = BxTemplStudioFunctions::getInstance()->inlineBox('', BxDolStudioTemplate::getInstance()->parseHtmlByName('mod_action_result_inline.html', array('content' => $aResult['message'])), true);
 
             echo json_encode($aResult);
             exit;
@@ -178,11 +158,10 @@ class BxDolStudioStore extends BxTemplStudioPage
 
     protected function loadGoodies()
     {
-        $iPerPage = 5;
+        $iPerPage = 6;
         $aProducts = array();
         $sJsObject = $this->getPageJsObject();
 
-        bx_import('BxDolStudioJson');
         $oJson = BxDolStudioJson::getInstance();
 
         // Load featured
@@ -191,17 +170,17 @@ class BxDolStudioStore extends BxTemplStudioPage
             'actions' => array(
                 array('name' => 'featured', 'caption' => '_adm_action_cpt_see_all_featured', 'url' => 'javascript:void(0)', 'onclick' => $sJsObject . ".changePage('featured', this)")
             ),
-            'items' => $oJson->load(BX_DOL_UNITY_URL_MARKET . 'json_browse_featured', array('start' => 0, 'per_page' => $iPerPage, 'client' => $this->iClient))
+            'items' => $oJson->load($this->sStoreDataUrlPublic . 'json_browse_featured', array('start' => 0, 'per_page' => $iPerPage, 'client' => $this->iClient, 'key' => $this->sClientKey))
         );
 
 
         // Load modules
         $aProducts[] = array(
-            'caption' => '_adm_block_cpt_last_modules',
+            'caption' => '_adm_block_cpt_last_extensions',
             'actions' => array(
-                array('name' => 'modules', 'caption' => '_adm_action_cpt_see_all_modules', 'url' => 'javascript:void(0)', 'onclick' => $sJsObject . ".changePage('modules', this)")
+                array('name' => 'modules', 'caption' => '_adm_action_cpt_see_all_extensions', 'url' => 'javascript:void(0)', 'onclick' => $sJsObject . ".changePage('extensions', this)")
             ),
-            'items' => $oJson->load(BX_DOL_UNITY_URL_MARKET . 'json_browse_by_tag', array('value' => 'extensions', 'start' => 0, 'per_page' => $iPerPage, 'client' => $this->iClient))
+            'items' => $oJson->load($this->sStoreDataUrlPublic . 'json_browse_by_category', array('value' => 'extensions', 'start' => 0, 'per_page' => $iPerPage, 'client' => $this->iClient, 'key' => $this->sClientKey))
         );
 
         // Load templates
@@ -210,16 +189,16 @@ class BxDolStudioStore extends BxTemplStudioPage
             'actions' => array(
                 array('name' => 'templates', 'caption' => '_adm_action_cpt_see_all_templates', 'url' => 'javascript:void(0)', 'onclick' => $sJsObject . ".changePage('templates', this)")
             ),
-            'items' => $oJson->load(BX_DOL_UNITY_URL_MARKET . 'json_browse_by_tag', array('value' => 'templates', 'start' => 0, 'per_page' => $iPerPage, 'client' => $this->iClient))
+            'items' => $oJson->load($this->sStoreDataUrlPublic . 'json_browse_by_category', array('value' => 'templates', 'start' => 0, 'per_page' => $iPerPage, 'client' => $this->iClient, 'key' => $this->sClientKey))
         );
 
         // Load languages
         $aProducts[] = array(
-            'caption' => '_adm_block_cpt_last_languages',
+            'caption' => '_adm_block_cpt_last_translations',
             'actions' => array(
-                array('name' => 'languages', 'caption' => '_adm_action_cpt_see_all_languages', 'url' => 'javascript:void(0)', 'onclick' => $sJsObject . ".changePage('languages', this)")
+                array('name' => 'languages', 'caption' => '_adm_action_cpt_see_all_translations', 'url' => 'javascript:void(0)', 'onclick' => $sJsObject . ".changePage('translations', this)")
             ),
-            'items' => $oJson->load(BX_DOL_UNITY_URL_MARKET . 'json_browse_by_tag', array('value' => 'translations', 'start' => 0, 'per_page' => $iPerPage, 'client' => $this->iClient))
+            'items' => $oJson->load($this->sStoreDataUrlPublic . 'json_browse_by_category', array('value' => 'translations', 'start' => 0, 'per_page' => $iPerPage, 'client' => $this->iClient, 'key' => $this->sClientKey))
         );
 
         return $aProducts;
@@ -227,41 +206,33 @@ class BxDolStudioStore extends BxTemplStudioPage
 
     protected function loadFeatured($iStart, $iPerPage)
     {
-        bx_import('BxDolStudioJson');
-        return BxDolStudioJson::getInstance()->load(BX_DOL_UNITY_URL_MARKET . 'json_browse_featured', array('start' => $iStart, 'per_page' => $iPerPage, 'client' => $this->iClient));
+        return BxDolStudioJson::getInstance()->load($this->sStoreDataUrlPublic . 'json_browse_featured', array('start' => $iStart, 'per_page' => $iPerPage, 'client' => $this->iClient, 'key' => $this->sClientKey));
+    }
+
+	protected function loadCategory($sCategory, $iStart, $iPerPage)
+    {
+        return BxDolStudioJson::getInstance()->load($this->sStoreDataUrlPublic . 'json_browse_by_category', array('value' => $sCategory, 'start' => $iStart, 'per_page' => $iPerPage, 'client' => $this->iClient, 'key' => $this->sClientKey));
     }
 
     protected function loadTag($sTag, $iStart, $iPerPage)
     {
-        bx_import('BxDolStudioJson');
-        return BxDolStudioJson::getInstance()->load(BX_DOL_UNITY_URL_MARKET . 'json_browse_by_tag', array('value' => $this->aliasToNameTag($sTag), 'start' => $iStart, 'per_page' => $iPerPage, 'client' => $this->iClient));
+        return BxDolStudioJson::getInstance()->load($this->sStoreDataUrlPublic . 'json_browse_by_tag', array('value' => $sTag, 'start' => $iStart, 'per_page' => $iPerPage, 'client' => $this->iClient, 'key' => $this->sClientKey));
     }
 
     protected function loadPurchases()
     {
-        bx_import('BxDolStudioOAuth');
-        $aProducts = BxDolStudioOAuth::getInstance()->loadItems(array('dol_type' => 'purchased_products', 'dol_domain' => BX_DOL_URL_ROOT));
-
-        $this->oDb->updateModule(array('hash' => ''));
-        if(!empty($aProducts) && is_array($aProducts))
-	        foreach ($aProducts as $aProduct)
-	        	$this->oDb->updateModule(array('hash' => $aProduct['hash']), array('name' => $aProduct['name']));
-
-        return $aProducts;
+        return BxDolStudioInstallerUtils::getInstance()->checkModules(true);
     }
 
     protected function loadUpdates()
     {
-    	bx_import('BxDolStudioInstallerUtils');
         return BxDolStudioInstallerUtils::getInstance()->checkUpdates($this->bAuthAccessUpdates);
     }
 
     protected function loadCheckout()
     {
-        bx_import('BxDolStudioJson');
         $oJson = BxDolStudioJson::getInstance();
 
-        bx_import('BxDolStudioCart');
         $aVendors = BxDolStudioCart::getInstance()->parseByVendor();
 
         $aResult = array();
@@ -272,7 +243,7 @@ class BxDolStudioStore extends BxTemplStudioPage
                 $aCounts[$aItem['item_id']] = $aItem['item_count'];
             }
 
-            $aProducts = $oJson->load(BX_DOL_UNITY_URL_MARKET . 'json_browse_selected', array('products' => base64_encode(serialize($aIds))));
+            $aProducts = $oJson->load($this->sStoreDataUrlPublic . 'json_browse_selected', array('products' => base64_encode(serialize($aIds))));
             if(!empty($aProducts))
                 $aResult[$sVendor] = array(
                     'ids' => $aIds,
@@ -286,7 +257,6 @@ class BxDolStudioStore extends BxTemplStudioPage
 
     protected function loadDownloaded()
     {
-        bx_import('BxDolStudioInstallerUtils');
         $oInstallerUtils = BxDolStudioInstallerUtils::getInstance();
 
         return array(
@@ -297,19 +267,9 @@ class BxDolStudioStore extends BxTemplStudioPage
 
     protected function loadProduct($sModuleName)
     {
-        bx_import('BxDolStudioJson');
         $oJson = BxDolStudioJson::getInstance();
 
-        return $oJson->load(BX_DOL_UNITY_URL_MARKET . 'json_get_product_by_name', array('value' => $sModuleName, 'client' => $this->iClient));
-    }
-
-    /*
-     * NOTE. Is needed for download popup selector. Isn't used for now.
-     */
-    protected function loadFiles($iId, $sType)
-    {
-        bx_import('BxDolStudioOAuth');
-        return BxDolStudioOAuth::getInstance()->loadItems(array('dol_type' => 'product_files', 'dol_product_id' => $iId, 'dol_file_type' => $sType));
+        return $oJson->load($this->sStoreDataUrlPublic . 'json_get_product_by_name', array('value' => $sModuleName, 'client' => $this->iClient, 'key' => $this->sClientKey));
     }
 
     /*
@@ -317,25 +277,22 @@ class BxDolStudioStore extends BxTemplStudioPage
      */
     protected function loadFile($iFileId)
     {
-        bx_import('BxDolStudioInstallerUtils');
         return BxDolStudioInstallerUtils::getInstance()->downloadFileAuthorized($iFileId);
     }
 
     /*
      * Load update's package publicly.
      */
-	protected function loadUpdate($sModuleName)
+	protected function loadUpdate($sModuleName, $bAutoUpdate = false)
     {
-        bx_import('BxDolStudioInstallerUtils');
-        return BxDolStudioInstallerUtils::getInstance()->downloadUpdatePublic($sModuleName);
+        return BxDolStudioInstallerUtils::getInstance()->downloadUpdatePublic($sModuleName, $bAutoUpdate);
     }
 
-    private function checkoutCart($sVendor)
+    private function checkoutCart($iVendor)
     {
-        bx_import('BxDolStudioCart');
         $oCart = BxDolStudioCart::getInstance();
 
-        $aItems = $oCart->getByVendor($sVendor);
+        $aItems = $oCart->getByVendor($iVendor);
         if(empty($aItems) || !is_array($aItems))
             return false;
 
@@ -344,22 +301,7 @@ class BxDolStudioStore extends BxTemplStudioPage
             $aIds[] = $aItem['item_id'];
 
         $sSid = bx_site_hash();
-        return BX_DOL_UNITY_URL_MARKET . 'purchase/' . $sVendor . '?sid=' . $sSid . '&products=' . base64_encode(implode(',', $aIds));
-    }
-
-    private function aliasToNameTag($sAlias)
-    {
-        return $this->aliasToName('tag', $sAlias);
-    }
-
-    private function aliasToNameCategory($sAlias)
-    {
-        return $this->aliasToName('category', $sAlias);
-    }
-
-    private function aliasToName($sType, $sAlias)
-    {
-        return isset($this->aAlias[$sType][$sAlias]) ? $this->aAlias[$sType][$sAlias] : $sAlias;
+        return $this->sStoreDataUrlPublic . 'purchase/' . $iVendor . '?sid=' . $sSid . '&products=' . base64_encode(implode(',', $aIds));
     }
 }
 

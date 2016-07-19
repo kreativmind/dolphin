@@ -3,11 +3,11 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Dolphin Core
+ * @defgroup    TridentCore Trident Core
  * @{
  */
 
-bx_import('BxDolDb');
+bx_import('BxDolForm');
 
 /**
  * Database queries for forms.
@@ -62,10 +62,8 @@ class BxDolFormQuery extends BxDolDb
         $aForm['form_attrs'] = array_merge($aDefaultsFormAttrs, !empty($aAddFormAttrs) && is_array($aAddFormAttrs) ? $aAddFormAttrs : array());
 
         // form action
-        if (!empty($aForm['form_attrs']['action']) && 0 != strncasecmp($aForm['form_attrs']['action'], 'http://', 7) && 0 != strncasecmp($aForm['form_attrs']['action'], 'https://', 8)) {
-            bx_import('BxDolPermalinks');
+        if (!empty($aForm['form_attrs']['action']) && 0 != strncasecmp($aForm['form_attrs']['action'], 'http://', 7) && 0 != strncasecmp($aForm['form_attrs']['action'], 'https://', 8))
             $aForm['form_attrs']['action'] = BX_DOL_URL_ROOT . BxDolPermalinks::getInstance()->permalink($aForm['form_attrs']['action']);
-        }
 
         // params
         if (!empty($aObject['params']))
@@ -120,6 +118,7 @@ class BxDolFormQuery extends BxDolDb
 
             if (!empty($a['values'])) {
                 if (0 == strncmp(BX_DATA_LISTS_KEY_PREFIX, $a['values'], 2)) {
+                    $aInput['values_list_name'] = trim($a['values'], BX_DATA_LISTS_KEY_PREFIX . ' ');
                     $aInput['values'] = self::getDataItems(trim($a['values'], BX_DATA_LISTS_KEY_PREFIX . ' '), isset(self::$TYPES_SET[$aInput['type']]));
                 } else {
                     $aInput['values'] = unserialize($a['values']);

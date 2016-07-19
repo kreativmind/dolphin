@@ -3,11 +3,9 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinStudio Dolphin Studio
+ * @defgroup    TridentStudio Trident Studio
  * @{
  */
-
-bx_import('BxDolStudioPageQuery');
 
 class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
 {
@@ -27,21 +25,49 @@ class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
         switch($aParams['type']) {
             case 'by_id':
                 $aMethod['name'] = 'getRow';
-                $sWhereClause = $this->prepare(" AND `tp`.`id`=? ", $aParams['value']);
+                $aMethod['params'][1] = array(
+                	'id' => $aParams['value']
+                );
+
+                $sWhereClause = " AND `tp`.`id`=:id ";
                 break;
             case 'by_object':
                 $aMethod['name'] = 'getRow';
-                $sWhereClause = $this->prepare(" AND `tp`.`object`=? ", $aParams['value']);
+                $aMethod['params'][1] = array(
+                	'object' => $aParams['value']
+                );
+
+                $sWhereClause = " AND `tp`.`object`=:object ";
                 break;
+
+			case 'by_uri':
+                $aMethod['name'] = 'getRow';
+                $aMethod['params'][1] = array(
+                	'uri' => $aParams['value']
+                );
+
+                $sWhereClause = " AND `tp`.`uri`=:uri ";
+                break;
+
             case 'by_object_full':
                 $aMethod['name'] = 'getRow';
+                $aMethod['params'][1] = array(
+                	'object' => $aParams['value']
+                );
+
                 $sSelectClause = ", `tpl`.`name` AS `layout_name`, `tpl`.`icon` AS `layout_icon`, `tpl`.`title` AS `layout_title`, `tpl`.`template` AS `layout_template`, `tpl`.`cells_number` AS `layout_cells_number`";
                 $sJoinClause = "LEFT JOIN `sys_pages_layouts` AS `tpl` ON `tp`.`layout_id`=`tpl`.`id`";
-                $sWhereClause = $this->prepare(" AND `tp`.`object`=? ", $aParams['value']);
+                $sWhereClause = " AND `tp`.`object`=:object ";
                 break;
+
             case 'by_module':
-                $sWhereClause = $this->prepare(" AND `tp`.`module`=? ", $aParams['value']);
+            	$aMethod['params'][1] = array(
+                	'module' => $aParams['value']
+                );
+
+                $sWhereClause = " AND `tp`.`module`=:module ";
                 break;
+
             case 'all':
                 break;
         }
@@ -84,21 +110,32 @@ class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
 
     function deletePages($aParams)
     {
+    	$aBindings = array();
         $sWhereClause = "";
 
         switch($aParams['type']) {
             case 'by_id':
-                $sWhereClause = $this->prepare("AND `tp`.`id`=? ", $aParams['value']);
+            	$aBindings = array(
+                	'id' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tp`.`id`=:id ";
                 break;
+
             case 'by_object':
-                $sWhereClause = $this->prepare("AND `tp`.`object`=? ", $aParams['value']);
+            	$aBindings = array(
+                	'object' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tp`.`object`=:object ";
                 break;
+
             case 'all':
                 break;
         }
 
         $sSql = "DELETE FROM `tp` USING `sys_objects_page` AS `tp` WHERE 1 " . $sWhereClause;
-        return (int)$this->query($sSql) > 0;
+        return (int)$this->query($sSql, $aBindings) > 0;
     }
 
     function isUniqUri($sUri)
@@ -118,8 +155,13 @@ class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
         switch($aParams['type']) {
             case 'by_id':
                 $aMethod['name'] = 'getRow';
-                $sWhereClause = $this->prepare("AND `tpl`.`id`=? ", $aParams['value']);
+                $aMethod['params'][1] = array(
+                	'id' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tpl`.`id`=:id ";
                 break;
+
             case 'all':
                 break;
         }
@@ -152,11 +194,17 @@ class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
         switch($aParams['type']) {
             case 'by_id':
                 $aMethod['name'] = 'getRow';
-                $sWhereClause = $this->prepare("AND `tpd`.`id`=? ", $aParams['value']);
+                $aMethod['params'][1] = array(
+                	'id' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tpd`.`id`=:id ";
                 break;
+
             case 'ordered':
                 $sWhereClause = "AND `tpd`.`order`<>0 ";
                 break;
+
             case 'all':
                 break;
         }
@@ -197,28 +245,55 @@ class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
         switch($aParams['type']) {
             case 'by_id':
                 $aMethod['name'] = 'getRow';
-                $sWhereClause = $this->prepare("AND `tpb`.`id`=? ", $aParams['value']);
+                $aMethod['params'][1] = array(
+                	'id' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tpb`.`id`=:id ";
                 break;
+
             case 'skeleton_by_type':
                 $aMethod['name'] = 'getRow';
-                $sWhereClause = $this->prepare("AND `tpb`.`object`='' AND `tpb`.`module`=? AND `tpb`.`type`=? ", BX_DOL_STUDIO_BP_SKELETONS, $aParams['value']);
+                $aMethod['params'][1] = array(
+                	'module' => BX_DOL_STUDIO_BP_SKELETONS,
+                	'type' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tpb`.`object`='' AND `tpb`.`module`=:module AND `tpb`.`type`=:type ";
                 break;
+
             case 'by_ids':
-                $sWhereClause = "AND `tpb`.`id` IN ('" . implode("','", array_fill(0, count($aParams['value']), '?')) . "')";
-                $sWhereClause = call_user_func_array(array($this, 'prepare'), array_merge(array($sWhereClause), $aParams['value']));
+                $sWhereClause = "AND `tpb`.`id` IN (" . $this->implode_escape($aParams['value']) . ")";
                 break;
+
             case 'by_object':
-                $sWhereClause = $this->prepare("AND `tpb`.`object`=?", $aParams['value']);
+            	$aMethod['params'][1] = array(
+                	'object' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tpb`.`object`=:object";
                 break;
+
             case 'by_object_cell':
-                $sWhereClause = $this->prepare("AND `tpb`.`object`=? AND `tpb`.`cell_id`=?", $aParams['object'], $aParams['cell']);
+            	$aMethod['params'][1] = array(
+                	'object' => $aParams['object'],
+            		'cell_id' => $aParams['cell']
+                );
+
+                $sWhereClause = "AND `tpb`.`object`=:object AND `tpb`.`cell_id`=:cell_id";
                 break;
+
             case 'by_module_to_copy':
-                $sWhereClause = $this->prepare("AND `tpb`.`module`=? AND `tpb`.`copyable`=1", $aParams['value']);
+            	$aMethod['params'][1] = array(
+                	'module' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tpb`.`module`=:module AND `tpb`.`copyable`=1";
 
                 if($aParams['value'] == BX_DOL_STUDIO_BP_SKELETONS)
                     $sWhereClause .= " AND `tpb`.`object`=''";
                 break;
+
             case 'counter_by_pages':
                 $aMethod['name'] = 'getPairs';
                 $aMethod['params'][1] = 'object';
@@ -226,6 +301,7 @@ class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
                 $sSelectClause = ", COUNT(*) AS `counter`";
                 $sGroupClause = "GROUP BY `tpb`.`object`";
                 break;
+
             case 'all':
                 break;
         }
@@ -235,8 +311,10 @@ class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
                 `tpb`.`object` AS `object`,
                 `tpb`.`cell_id` AS `cell_id`,
                 `tpb`.`module` AS `module`,
+                `tpb`.`title_system` AS `title_system`,
                 `tpb`.`title` AS `title`,
                 `tpb`.`designbox_id` AS `designbox_id`,
+                `tpb`.`hidden_on` AS `hidden_on`,
                 `tpb`.`visible_for_levels` AS `visible_for_levels`,
                 `tpb`.`type` AS `type`,
                 `tpb`.`content` AS `content`,
@@ -258,35 +336,44 @@ class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
     {
         $aFields['order'] = $this->getBlockOrderMax($aFields['object']) + 1;
 
-        $sSql = "INSERT INTO `sys_pages_blocks` SET `" . implode("`=?, `", array_keys($aFields)) . "`=?";
-        $sSql = call_user_func_array(array($this, 'prepare'), array_merge(array($sSql), array_values($aFields)));
+        $sSql = "INSERT INTO `sys_pages_blocks` SET " . $this->arrayToSQL($aFields);
         return (int)$this->query($sSql) > 0;
     }
 
     function updateBlock($iId, $aFields)
     {
-        $sSql = "UPDATE `sys_pages_blocks` SET `" . implode("`=?, `", array_keys($aFields)) . "`=?  WHERE `id`=?";
-        $sSql = call_user_func_array(array($this, 'prepare'), array_merge(array($sSql), array_values($aFields), array($iId)));
-        return $this->query($sSql);
+        $sSql = "UPDATE `sys_pages_blocks` SET " . $this->arrayToSQL($aFields) . " WHERE `id`=:id";
+        return $this->query($sSql, array('id' => $iId));
     }
 
     function deleteBlocks($aParams)
     {
+    	$aBindings = array();
         $sWhereClause = "";
 
         switch($aParams['type']) {
             case 'by_id':
-                $sWhereClause = $this->prepare("AND `tpb`.`id`=? ", $aParams['value']);
+            	$aBindings = array(
+                	'id' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tpb`.`id`=:id ";
                 break;
+
             case 'by_object':
-                $sWhereClause = $this->prepare("AND `tpb`.`object`=? ", $aParams['value']);
+            	$aBindings = array(
+                	'object' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tpb`.`object`=:object ";
                 break;
+
             case 'all':
                 break;
         }
 
         $sSql = "DELETE FROM `tpb` USING `sys_pages_blocks` AS `tpb` WHERE 1 " . $sWhereClause;
-        return (int)$this->query($sSql) > 0;
+        return (int)$this->query($sSql, $aBindings) > 0;
     }
 
     function resetBlocksByPage($sObject, $iCellId)
@@ -307,8 +394,13 @@ class BxDolStudioBuilderPageQuery extends BxDolStudioPageQuery
 
         switch($aParams['type']) {
             case 'by_id':
-                $sWhereClause = $this->prepare("AND `tpb`.`id`=? ", $aParams['value']);
+            	$aMethod['params'][1] = array(
+                	'id' => $aParams['value']
+                );
+
+                $sWhereClause = "AND `tpb`.`id`=:id ";
                 break;
+
             case 'all':
                 break;
         }

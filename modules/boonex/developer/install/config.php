@@ -4,7 +4,7 @@
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
  * @defgroup    Developer Developer
- * @ingroup     DolphinModules
+ * @ingroup     TridentModules
  *
  * @{
  */
@@ -17,12 +17,12 @@ $aConfig = array(
     'name' => 'bx_developer',
     'title' => 'Developer',
     'note' => 'Developer tools...',
-    'version' => '8.0.2.DEV',
+    'version' => '9.0.1.DEV',
     'vendor' => 'BoonEx',
 	'help_url' => 'http://feed.boonex.com/?section={module_name}',
 
     'compatible_with' => array(
-        '8.0.x'
+        '9.0.x'
     ),
 
     /**
@@ -33,21 +33,23 @@ $aConfig = array(
 
     'db_prefix' => 'bx_dev_',
     'class_prefix' => 'BxDev',
+
+	/**
+     * Category for language keys.
+     */
+    'language_category' => 'BoonEx Developer',
+
     /**
      * Installation/Uninstallation Section.
      */
     'install' => array(
         'execute_sql' => 1,
         'update_languages' => 1,
-        'recompile_global_paramaters' => 1,
-        'recompile_permalinks' => 1,
         'clear_db_cache' => 1
     ),
     'uninstall' => array (
         'execute_sql' => 1,
         'update_languages' => 1,
-        'recompile_global_paramaters' => 1,
-        'recompile_permalinks' => 1,
         'clear_db_cache' => 1
     ),
     'enable' => array(
@@ -56,25 +58,12 @@ $aConfig = array(
     'disable' => array(
         'execute_sql' => 1,
     ),
+
     /**
      * Dependencies Section
      */
     'dependencies' => array(),
-    /**
-     * Category for language keys.
-     */
-    'language_category' => 'BoonEx Developer',
-    /**
-     * Introduction and Conclusion Section.
-     */
-    'install_info' => array(
-        'introduction' => 'inst_intro.html',
-        'conclusion' => 'inst_concl.html'
-    ),
-    'uninstall_info' => array(
-        'introduction' => 'uninst_intro.html',
-        'conclusion' => 'uninst_concl.html'
-    )
+
 );
 
 /** @} */

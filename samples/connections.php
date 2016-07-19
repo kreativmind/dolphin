@@ -3,7 +3,7 @@
  * Copyright (c) BoonEx Pty Limited - http://www.boonex.com/
  * CC-BY License - http://creativecommons.org/licenses/by/3.0/
  *
- * @defgroup    DolphinCore Samples
+ * @defgroup    TridentCore Samples
  * @{
  */
 
@@ -30,8 +30,6 @@
 require_once('./../inc/header.inc.php');
 require_once(BX_DIRECTORY_PATH_INC . "design.inc.php");
 
-bx_import('BxDolLanguages');
-bx_import('BxDolTemplate');
 
 $oTemplate = BxDolTemplate::getInstance();
 $oTemplate->setPageNameIndex (BX_PAGE_DEFAULT);
@@ -80,7 +78,6 @@ function PageCompMainCode()
         $iProfileId2 = $oDb->getOne($sQueryPrepared);
     }
 
-    bx_import('BxDolConnection');
     $oConnection = BxDolConnection::getObjectInstance($sObject);
     if (!$oConnection)
         die ("'$sObject' object is not defined.");
@@ -177,7 +174,6 @@ function GenerateData($iMutual = 3, $iOneWay = 1, $sTable, $sType, $sObject)
 {
     $oDb = BxDolDb::getInstance();
 
-    bx_import('BxDolConnection');
     $oConnection = BxDolConnection::getObjectInstance($sObject);
     if (!$oConnection)
         die ("'$sObject' object is not defined.");
